@@ -1,0 +1,10 @@
+# ESP-IDF Partition Table
+# Name, Type, SubType, Offset, Size, Flags
+sec_cert,data,undefined,0xd000,12K,
+nvs,data,nvs,0x10000,24K,
+otadata,data,ota,0x16000,8K,
+phy_init,data,phy,0x18000,4K,
+fctry,data,nvs,0x19000,24K,
+ota_0,app,ota_0,0x20000,4200K,
+storage,data,spiffs,0x43a000,2600K,
+model,data,spiffs,0x6c4000,8600K,

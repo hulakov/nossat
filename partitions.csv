@@ -1,0 +1,4 @@
+# Name,   Type, SubType, Offset,   Size,  Flags
+factory,  app,  factory, 0x010000, 2000K
+storage,  data, spiffs,  ,         1000K,
+model,    data, spiffs,  ,         3005K,
