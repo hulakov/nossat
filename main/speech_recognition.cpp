@@ -264,7 +264,6 @@ void SpeechRecognition::handle_task()
 
 void SpeechRecognition::initialize()
 {
-    ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
     ENSURE_TRUE(!m_data);
 
     ESP_LOGI(TAG, "Initialize result queue");

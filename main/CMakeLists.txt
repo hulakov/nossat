@@ -1,6 +1,5 @@
 set(SOURCES
     main.cpp
-    app_led.c
     speech_recognition.cpp
 )
 
