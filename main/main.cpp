@@ -6,6 +6,17 @@ extern "C"
 {
 #include "app_led.h"
 }
+#include "secrets.h"
+
+#include <HaBridge.h>
+#include <MQTTRemote.h>
+#include <entities/HaEntityBrightness.h>
+#include <entities/HaEntityEvent.h>
+#include <entities/HaEntityLight.h>
+#include <entities/HaEntityTemperature.h>
+
+#include <WiFiHelper.h>
+#include <nlohmann/json.hpp>
 
 #include "sanity_checks.h"
 
@@ -13,6 +24,10 @@ extern "C"
 #include "freertos/task.h"
 
 static const char *TAG = "main";
+static const char *DEVICE_NAME = "nossat";
+
+WiFiHelper wifi_helper(
+    DEVICE_NAME, []() { ESP_LOGI(TAG, "on connected callback"); }, []() { ESP_LOGI(TAG, "on disconnected callback"); });
 
 void add_commands()
 {
@@ -34,6 +49,42 @@ void add_commands()
     SpeechRecognition::instance().end_add_commands();
 }
 
+nlohmann::json make_device_doc_json()
+{
+    nlohmann::json json;
+    json["identifiers"] = "my_hardware_" + std::string(DEVICE_NAME);
+    json["name"] = "Nossat";
+    json["sw_version"] = "1.0.0";
+    json["model"] = "my_hardware";
+    json["manufacturer"] = "custom inc.";
+    return json;
+}
+
+MQTTRemote mqtt_remote(DEVICE_NAME, MQTT_HOSTNAME, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
+nlohmann::json json_this_device_doc = make_device_doc_json();
+HaBridge ha_bridge(mqtt_remote, "test", json_this_device_doc);
+HaEntityBrightness ha_entity_brightness(ha_bridge, "brightness");
+
+HaEntityLight::Capabilities capabilities;
+HaEntityLight ha_entity_light(ha_bridge, "test light", "test_light", capabilities);
+
+HaEntityEvent ha_tick_event(ha_bridge, "Tick", "tick_event", {"tick"}, HaEntityEvent::DeviceClass::Button);
+
+void haStateTask(void *pvParameters)
+{
+    int b = 0;
+    bool on = true;
+    while (1)
+    {
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+
+        ha_tick_event.publishEvent("tick", {{"on", on}, {"ordinal", b}});
+        ha_entity_brightness.publishBrightness(b++);
+        on = !on;
+        ha_entity_light.publishIsOn(on);
+    }
+}
+
 extern "C"
 {
     void app_main(void)
@@ -44,6 +95,28 @@ extern "C"
         ESP_LOGI(TAG, "******* Initialize Board *******");
         Board::instance().initialize();
         Board::instance().show_message(Board::HELLO, "Hello!");
+
+        ESP_LOGI(TAG, "Connect to WiFi");
+        ENSURE_TRUE(wifi_helper.connectToAp(WIFI_SSID, WIFI_PASSWORD));
+
+        ESP_LOGI(TAG, "Connect to MQTT");
+        mqtt_remote.start();
+        while (!mqtt_remote.connected())
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+        ha_entity_brightness.publishConfiguration();
+        ha_entity_light.publishConfiguration();
+        ha_entity_light.setOnOn([&](bool on) {
+            ESP_LOGI(TAG, "Light: %s", on ? "ON" : "OFF");
+            ha_entity_light.publishIsOn(on);
+        });
+
+        ha_tick_event.publishConfiguration();
+
+        // xTaskCreate(haStateTask, "haStateTask", 8 * 1024, NULL, 15, NULL);
+
+        TaskHandle_t ha_task;
+        ENSURE_TRUE(xTaskCreatePinnedToCore(haStateTask, "HA", 8 * 1024, nullptr, 5, &ha_task, 1));
+
         SpeechRecognition::instance().initialize();
         add_commands();
 

@@ -5,3 +5,5 @@ sdkconfig.old
 /.vscode/
 /managed_components/
 /debug.log
+/main/secrets.h
+/dependencies.lock
