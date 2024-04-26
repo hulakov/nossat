@@ -121,14 +121,14 @@ extern "C"
             SpeechRecognition::instance().audio_feed_task();
             vTaskDelete(NULL);
         };
-        ENSURE_TRUE(xTaskCreatePinnedToCore(audio_feed_task_adapter, "Feed Task", 8 * 1024, nullptr, 5, &feed_task, 0));
+        ENSURE_TRUE(xTaskCreatePinnedToCore(audio_feed_task_adapter, "Feed Task", 4 * 1024, nullptr, 5, &feed_task, 0));
 
         TaskHandle_t detect_task;
         TaskFunction_t audio_detect_task_adapter = [](void *arg) {
             SpeechRecognition::instance().audio_detect_task();
             vTaskDelete(NULL);
         };
-        ENSURE_TRUE(xTaskCreatePinnedToCore(audio_detect_task_adapter, "Speech Recognition Task", 8 * 1024, nullptr, 5,
+        ENSURE_TRUE(xTaskCreatePinnedToCore(audio_detect_task_adapter, "Speech Recognition Task", 4 * 1024, nullptr, 5,
                                             &detect_task, 1));
 
         TaskHandle_t handle_task;
