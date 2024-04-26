@@ -234,7 +234,7 @@ void SpeechRecognition::handle_task()
         case State::COMMAND_NOT_DETECTED: {
             Board::instance().show_message(Board::TIMEOUT, "Timeout");
             play_wav(m_data->not_recognized_wav);
-            vTaskDelay(pdMS_TO_TICKS(2000));
+            vTaskDelay(pdMS_TO_TICKS(1000));
             Board::instance().hide_message();
             break;
         }
@@ -251,7 +251,7 @@ void SpeechRecognition::handle_task()
             Board::instance().show_message(Board::COMMAND_ACCEPTED, command.message);
             command.handler();
             play_wav(m_data->recognized_wav);
-            vTaskDelay(pdMS_TO_TICKS(2000));
+            vTaskDelay(pdMS_TO_TICKS(1000));
             Board::instance().hide_message();
             break;
         }
