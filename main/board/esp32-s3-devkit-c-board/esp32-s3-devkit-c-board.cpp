@@ -14,10 +14,10 @@ const constexpr char *TAG = "board";
 const int Board::MICROPHONE_CHANNEL_COUNT = 1;
 const int Board::REFERENCE_CHANNEL_COUNT = 1;
 
-constexpr const gpio_num_t GPIO_I2S_LRCK = GPIO_NUM_11;
+constexpr const gpio_num_t GPIO_I2S_LRCK = GPIO_NUM_11; // WS
 constexpr const gpio_num_t GPIO_I2S_MCLK = GPIO_NUM_NC;
-constexpr const gpio_num_t GPIO_I2S_SCLK = GPIO_NUM_12;
-constexpr const gpio_num_t GPIO_I2S_SDIN = GPIO_NUM_10;
+constexpr const gpio_num_t GPIO_I2S_SCLK = GPIO_NUM_12; // SCK
+constexpr const gpio_num_t GPIO_I2S_SDIN = GPIO_NUM_10; // SD
 constexpr const gpio_num_t GPIO_I2S_DOUT = GPIO_NUM_NC;
 
 constexpr const gpio_num_t GPIO_BLINK = GPIO_NUM_48;
@@ -179,7 +179,7 @@ bool Board::show_message(MessageType type, const char *message)
     switch (type)
     {
     case MessageType::HELLO:
-        m_data->enable_led(50, 50, 50);
+        m_data->enable_led(255, 0, 0);
         break;
     case MessageType::SAY_COMMAND:
         m_data->enable_led(0, 0, 100);
@@ -200,6 +200,7 @@ bool Board::show_message(MessageType type, const char *message)
 
 bool Board::hide_message()
 {
-    m_data->disable_led();
+    // m_data->disable_led();
+    m_data->enable_led(1, 1, 1);
     return true;
 }
