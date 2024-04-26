@@ -58,6 +58,7 @@ void add_commands()
 {
     SpeechRecognition::instance().begin_add_commands();
 
+    add_command({"Toggle the Light", "Light"});
     add_command({"Turn On the Light", "Switch On the Light"});
     add_command({"Turn Off the Light", "Switch Off the Light"});
     add_command({"Turn White"});
@@ -68,8 +69,8 @@ void add_commands()
     add_command({"Turn Pink"});
     add_command({"Tiny Light", "Turn On the Tiny Light"});
 
-    add_command({"Play Cartoons"});
-    add_command({"Play Music"});
+    add_command({"Play Cartoons", "Cartoons"});
+    add_command({"Play Music", "Music"});
 
     add_command({"Play"});
     add_command({"Pause"});
