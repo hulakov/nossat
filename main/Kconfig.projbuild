@@ -1,10 +1,10 @@
 menu "HMI Board Config"
     choice BSP_BOARD
-        default BSP_BOARD_ESP32_S3_BOX_LITE
+        default BSP_NOSSAT_ONE
         prompt "Select HMI Board"
-        config BSP_BOARD_ESP32_S3_BOX_LITE
-            bool "ESP32-S3-BOX-Lite"
-        config BSP_BOARD_ESP32_S3_DEVKIT_C
-            bool "ESP32-S3-DevKit C"
+        config BSP_NOSSAT_BOX_LITE
+            bool "Nosyna Satellite Box Lite"
+        config BSP_NOSSAT_ONE
+            bool "Nosyna Satellite One"
     endchoice
 endmenu

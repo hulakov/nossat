@@ -1,3 +1,26 @@
 cmake_minimum_required(VERSION 3.5)
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/sdkconfig)
+    message(STATUS "use sdkconfig")
+    file(READ sdkconfig SDKCONFIG_RULE)
+else()
+    message(FATAL_ERROR "${CMAKE_CURRENT_SOURCE_DIR}/sdkconfig is missing")
+endif()
+
+if(SDKCONFIG_RULE)
+    string(REGEX MATCH "CONFIG_BSP_NOSSAT_ONE=y" COMPILER_BSP_NOSSAT_ONE "${SDKCONFIG_RULE}")
+    string(REGEX MATCH "CONFIG_BSP_NOSSAT_BOX_LITE=y" COMPILER_NOSSAT_BOX_LITE "${SDKCONFIG_RULE}")
+endif()
+
+if(COMPILER_BSP_NOSSAT_ONE)
+    message(STATUS "PLATFORM Nosyna Satellite One")
+    set(EXTRA_COMPONENT_DIRS nossat-one-components)
+elseif(COMPILER_NOSSAT_BOX_LITE)
+    message(STATUS "PLATFORM Nosyna Satellite Box Lite")
+    set(EXTRA_COMPONENT_DIRS nossat-box-lite-components)
+else()
+    message(FATAL_ERROR "PLATFORM unknown")
+endif()
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(nossat)

@@ -3,7 +3,7 @@ set(SOURCES
     speech_recognition.cpp
 )
 
-if (CONFIG_BSP_BOARD_ESP32_S3_BOX_LITE)
+if (CONFIG_BSP_NOSSAT_BOX_LITE)
     message("Building for ESP32-S3-BOX-Lite")
     list(APPEND BOARD_SOURCES
         board/esp-box-lite/esp-box-lite-board.cpp
@@ -13,10 +13,11 @@ if (CONFIG_BSP_BOARD_ESP32_S3_BOX_LITE)
     )
     set_source_files_properties(${BOARD_SOURCES}
         PROPERTIES COMPILE_OPTIONS -DLV_LVGL_H_INCLUDE_SIMPLE)
-elseif (CONFIG_BSP_BOARD_ESP32_S3_DEVKIT_C)
+elseif (CONFIG_BSP_NOSSAT_ONE)
     message("Building for ESP32-S3-DevKit C")
     list(APPEND BOARD_SOURCES
-        board/esp32-s3-devkit-c-board/esp32-s3-devkit-c-board.cpp
+        board/nossat-one/esp32-s3-devkit-c-board.cpp
+        board/nossat-one/lvgl_ui.c
     )
 endif()
 
