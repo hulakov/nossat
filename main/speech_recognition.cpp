@@ -27,8 +27,7 @@ const constexpr char *WAKE_WAV_PATH = "/spiffs/echo_en_wake.wav";
 const constexpr char *RECOGNIZED_WAV_PATH = "/spiffs/echo_en_recognized.wav";
 const constexpr char *NOT_RECOGNIZED_WAV_PATH = "/spiffs/echo_en_not_recognized.wav";
 
-enum class State
-{
+enum class State {
     NONE,
     COMMAND_NOT_DETECTED,
     WAITING_FOR_COMMAND,

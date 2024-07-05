@@ -121,8 +121,7 @@ void Board::initialize()
     m_data->configure_led();
 
     ESP_LOGI(TAG, "Initialize UI");
-    bsp_display_cfg_t cfg = {
-        .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
+    bsp_display_cfg_t cfg = {.lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
     cfg.lvgl_port_cfg.task_affinity = 1;
     lv_disp_t *disp = bsp_display_start_with_config(&cfg);
     lvgl_ui_main(disp);
@@ -145,8 +144,9 @@ bool Board::capture_audio(std::vector<int16_t> &buffer, size_t chunk_size)
     int32_t *tmp_buff = (int32_t *)&buffer[0];
     for (int i = 0; i < chunk_size; i++)
     {
-        // 32:8 are valid bits, 8:0 are the lower 8 bits, all are 0. The input of AFE is 16-bit voice data, and 29:13
-        // bits are used to amplify the voice signal.
+        // 32:8 are valid bits, 8:0 are the lower 8 bits, all are 0. The input
+        // of AFE is 16-bit voice data, and 29:13 bits are used to amplify the
+        // voice signal.
         tmp_buff[i] = tmp_buff[i] >> 14;
     }
 

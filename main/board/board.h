@@ -19,13 +19,7 @@ class Board final
                     const std::vector<uint8_t>::const_iterator &buffer_end, uint32_t sample_rate,
                     uint32_t bits_per_sample, size_t channels);
 
-    enum MessageType
-    {
-        HELLO,
-        SAY_COMMAND,
-        TIMEOUT,
-        COMMAND_ACCEPTED
-    };
+    enum MessageType { HELLO, SAY_COMMAND, TIMEOUT, COMMAND_ACCEPTED };
 
     bool show_message(MessageType type, const char *message = nullptr);
     bool hide_message();

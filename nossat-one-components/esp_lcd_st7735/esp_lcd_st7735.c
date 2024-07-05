@@ -24,7 +24,8 @@ static const char *TAG = "st7735";
 static esp_err_t panel_st7735_del(esp_lcd_panel_t *panel);
 static esp_err_t panel_st7735_reset(esp_lcd_panel_t *panel);
 static esp_err_t panel_st7735_init(esp_lcd_panel_t *panel);
-static esp_err_t panel_st7735_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x_end, int y_end, const void *color_data);
+static esp_err_t panel_st7735_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x_end, int y_end,
+                                          const void *color_data);
 static esp_err_t panel_st7735_invert_color(esp_lcd_panel_t *panel, bool invert_color_data);
 static esp_err_t panel_st7735_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool mirror_y);
 static esp_err_t panel_st7735_swap_xy(esp_lcd_panel_t *panel, bool swap_axes);
@@ -50,7 +51,9 @@ typedef struct
     uint16_t init_cmds_size;
 } st7735_panel_t;
 
-esp_err_t esp_lcd_new_panel_st7735(const esp_lcd_panel_io_handle_t io, const esp_lcd_panel_dev_config_t *panel_dev_config, esp_lcd_panel_handle_t *ret_panel)
+esp_err_t esp_lcd_new_panel_st7735(const esp_lcd_panel_io_handle_t io,
+                                   const esp_lcd_panel_dev_config_t *panel_dev_config,
+                                   esp_lcd_panel_handle_t *ret_panel)
 {
     esp_err_t ret = ESP_OK;
     st7735_panel_t *st7735 = NULL;
@@ -103,7 +106,8 @@ esp_err_t esp_lcd_new_panel_st7735(const esp_lcd_panel_io_handle_t io, const esp
         break;
     case 18: // RGB666
         st7735->colmod_val = 0x06;
-        // each color component (R/G/B) should occupy the 6 high bits of a byte, which means 3 full bytes are required for a pixel
+        // each color component (R/G/B) should occupy the 6 high bits of a byte, which means 3 full bytes are required
+        // for a pixel
         st7735->fb_bits_per_pixel = 24;
         break;
     case 24: // RGB888
@@ -237,9 +241,11 @@ static const st7735_lcd_init_cmd_t vendor_specific_init_default[] = {
     // // Display Inversion On
     // {LCD_CMD_INVON, (uint8_t[]){}, 0, 0},
     // Gamma (‘+’polarity) Correction Characteristics Setting
-    {0xE0, (uint8_t[]){0x02, 0x1C, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2D, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10}, 16, 0},
+    {0xE0, (uint8_t[]){0x02, 0x1C, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2D, 0x29, 0x25, 0x2B, 0x39, 0x00, 0x01, 0x03, 0x10},
+     16, 0},
     // Gamma ‘-’polarity Correction Characteristics Setting
-    {0xE1, (uint8_t[]){0x03, 0x1D, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10}, 16, 0},
+    {0xE1, (uint8_t[]){0x03, 0x1D, 0x07, 0x06, 0x2E, 0x2C, 0x29, 0x2D, 0x2E, 0x2E, 0x37, 0x3F, 0x00, 0x00, 0x02, 0x10},
+     16, 0},
     // Normal Display Mode On
     {LCD_CMD_NORON, (uint8_t[]){}, 0, 10},
     // Display On
@@ -254,14 +260,16 @@ static esp_err_t panel_st7735_init(esp_lcd_panel_t *panel)
     // LCD goes into sleep mode and display will be turned off after power on reset, exit sleep mode first
     ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_SLPOUT, NULL, 0), TAG, "send command failed");
     vTaskDelay(pdMS_TO_TICKS(100));
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_MADCTL, (uint8_t[]){
-                                                                          st7735->madctl_val,
-                                                                      },
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_MADCTL,
+                                                  (uint8_t[]){
+                                                      st7735->madctl_val,
+                                                  },
                                                   1),
                         TAG, "send command failed");
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_COLMOD, (uint8_t[]){
-                                                                          st7735->colmod_val,
-                                                                      },
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_COLMOD,
+                                                  (uint8_t[]){
+                                                      st7735->colmod_val,
+                                                  },
                                                   1),
                         TAG, "send command failed");
 
@@ -299,10 +307,12 @@ static esp_err_t panel_st7735_init(esp_lcd_panel_t *panel)
 
         if (is_cmd_overwritten)
         {
-            ESP_LOGW(TAG, "The %02Xh command has been used and will be overwritten by external initialization sequence", init_cmds[i].cmd);
+            ESP_LOGW(TAG, "The %02Xh command has been used and will be overwritten by external initialization sequence",
+                     init_cmds[i].cmd);
         }
 
-        ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, init_cmds[i].cmd, init_cmds[i].data, init_cmds[i].data_bytes), TAG, "send command failed");
+        ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, init_cmds[i].cmd, init_cmds[i].data, init_cmds[i].data_bytes),
+                            TAG, "send command failed");
         vTaskDelay(pdMS_TO_TICKS(init_cmds[i].delay_ms));
     }
     ESP_LOGD(TAG, "send init commands success");
@@ -310,7 +320,8 @@ static esp_err_t panel_st7735_init(esp_lcd_panel_t *panel)
     return ESP_OK;
 }
 
-static esp_err_t panel_st7735_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x_end, int y_end, const void *color_data)
+static esp_err_t panel_st7735_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x_end, int y_end,
+                                          const void *color_data)
 {
     st7735_panel_t *st7735 = __containerof(panel, st7735_panel_t, base);
     assert((x_start < x_end) && (y_start < y_end) && "start position must be smaller than end position");
@@ -322,20 +333,22 @@ static esp_err_t panel_st7735_draw_bitmap(esp_lcd_panel_t *panel, int x_start, i
     y_end += st7735->y_gap;
 
     // define an area of frame memory where MCU can access
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_CASET, (uint8_t[]){
-                                                                         (x_start >> 8) & 0xFF,
-                                                                         x_start & 0xFF,
-                                                                         ((x_end - 1) >> 8) & 0xFF,
-                                                                         (x_end - 1) & 0xFF,
-                                                                     },
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_CASET,
+                                                  (uint8_t[]){
+                                                      (x_start >> 8) & 0xFF,
+                                                      x_start & 0xFF,
+                                                      ((x_end - 1) >> 8) & 0xFF,
+                                                      (x_end - 1) & 0xFF,
+                                                  },
                                                   4),
                         TAG, "send command failed");
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_RASET, (uint8_t[]){
-                                                                         (y_start >> 8) & 0xFF,
-                                                                         y_start & 0xFF,
-                                                                         ((y_end - 1) >> 8) & 0xFF,
-                                                                         (y_end - 1) & 0xFF,
-                                                                     },
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_RASET,
+                                                  (uint8_t[]){
+                                                      (y_start >> 8) & 0xFF,
+                                                      y_start & 0xFF,
+                                                      ((y_end - 1) >> 8) & 0xFF,
+                                                      (y_end - 1) & 0xFF,
+                                                  },
                                                   4),
                         TAG, "send command failed");
     // transfer frame buffer
@@ -382,7 +395,8 @@ static esp_err_t panel_st7735_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool
     {
         st7735->madctl_val &= ~LCD_CMD_MY_BIT;
     }
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_MADCTL, (uint8_t[]){st7735->madctl_val}, 1), TAG, "send command failed");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_MADCTL, (uint8_t[]){st7735->madctl_val}, 1), TAG,
+                        "send command failed");
     return ESP_OK;
 }
 
@@ -398,7 +412,8 @@ static esp_err_t panel_st7735_swap_xy(esp_lcd_panel_t *panel, bool swap_axes)
     {
         st7735->madctl_val &= ~LCD_CMD_MV_BIT;
     }
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_MADCTL, (uint8_t[]){st7735->madctl_val}, 1), TAG, "send command failed");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_CMD_MADCTL, (uint8_t[]){st7735->madctl_val}, 1), TAG,
+                        "send command failed");
     return ESP_OK;
 }
 

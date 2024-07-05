@@ -23,39 +23,37 @@ const char *TAG = "esp-nossat-one";
 /* LCD display color bits */
 #define BSP_LCD_BITS_PER_PIXEL (16)
 
-#define BSP_ERROR_CHECK_RETURN_NULL(x) \
-    do                                 \
-    {                                  \
-        if (unlikely((x) != ESP_OK))   \
-        {                              \
-            return NULL;               \
-        }                              \
+#define BSP_ERROR_CHECK_RETURN_NULL(x)                                                                                 \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (unlikely((x) != ESP_OK))                                                                                   \
+        {                                                                                                              \
+            return NULL;                                                                                               \
+        }                                                                                                              \
     } while (0)
 
-#define BSP_NULL_CHECK(x, ret) \
-    do                         \
-    {                          \
-        if ((x) == NULL)       \
-        {                      \
-            return ret;        \
-        }                      \
+#define BSP_NULL_CHECK(x, ret)                                                                                         \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if ((x) == NULL)                                                                                               \
+        {                                                                                                              \
+            return ret;                                                                                                \
+        }                                                                                                              \
     } while (0)
-#define BSP_ERROR_CHECK_RETURN_ERR(x)    \
-    do                                   \
-    {                                    \
-        esp_err_t err_rc_ = (x);         \
-        if (unlikely(err_rc_ != ESP_OK)) \
-        {                                \
-            return err_rc_;              \
-        }                                \
+#define BSP_ERROR_CHECK_RETURN_ERR(x)                                                                                  \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        esp_err_t err_rc_ = (x);                                                                                       \
+        if (unlikely(err_rc_ != ESP_OK))                                                                               \
+        {                                                                                                              \
+            return err_rc_;                                                                                            \
+        }                                                                                                              \
     } while (0)
 
 static esp_err_t bsp_display_brightness_init(void)
 {
     ESP_LOGI(TAG, "Turn off LCD backlight");
-    gpio_config_t bk_gpio_config = {
-        .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1ULL << BSP_LCD_BACKLIGHT};
+    gpio_config_t bk_gpio_config = {.mode = GPIO_MODE_OUTPUT, .pin_bit_mask = 1ULL << BSP_LCD_BACKLIGHT};
     BSP_ERROR_CHECK_RETURN_ERR(gpio_config(&bk_gpio_config));
 
     // // Setup LEDC peripheral for PWM backlight control
@@ -99,7 +97,8 @@ esp_err_t bsp_display_brightness_set(int brightness_percent)
     return ESP_OK;
 }
 
-esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_handle_t *ret_panel, esp_lcd_panel_io_handle_t *ret_io)
+esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_handle_t *ret_panel,
+                          esp_lcd_panel_io_handle_t *ret_io)
 {
     esp_err_t ret = ESP_OK;
     assert(config != NULL && config->max_transfer_sz > 0);
@@ -127,7 +126,8 @@ esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_hand
         .spi_mode = 0,
         .trans_queue_depth = 10,
     };
-    ESP_GOTO_ON_ERROR(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)BSP_LCD_SPI_NUM, &io_config, ret_io), err, TAG, "New panel IO failed");
+    ESP_GOTO_ON_ERROR(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)BSP_LCD_SPI_NUM, &io_config, ret_io), err, TAG,
+                      "New panel IO failed");
 
     ESP_LOGD(TAG, "Install LCD driver");
     const esp_lcd_panel_dev_config_t panel_config = {
@@ -187,11 +187,12 @@ static lv_disp_t *bsp_display_lcd_init(void)
         .vres = BSP_LCD_V_RES,
         .monochrome = false,
         /* Rotation values must be same as used in esp_lcd for initial settings of the screen */
-        .rotation = {
-            .swap_xy = true,
-            .mirror_x = false,
-            .mirror_y = true,
-        },
+        .rotation =
+            {
+                .swap_xy = true,
+                .mirror_x = false,
+                .mirror_y = true,
+            },
         .flags = {
             .buff_dma = true,
         }};
