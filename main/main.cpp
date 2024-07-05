@@ -102,6 +102,9 @@ nlohmann::json make_device_doc_json()
 
 extern "C"
 {
+
+void set_lvgl_value(int32_t v);
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "Nosyna Satelite is starting!");
@@ -155,8 +158,12 @@ void app_main(void)
     Board::instance().hide_message();
 
     encoder1->set_step_value(4);
-    encoder1->set_value_changed_handler([](int previous_value, int new_value)
-                                        { ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value); });
+    encoder1->set_value_changed_handler(
+        [](int previous_value, int new_value)
+        {
+            ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value);
+            set_lvgl_value(new_value);
+        });
     encoder1->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
     encoder1->initialize(interrupt_manager);
 
