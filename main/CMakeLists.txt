@@ -2,6 +2,9 @@ set(SOURCES
     main.cpp
     speech_recognition.cpp
     led_blinker.cpp
+    interrupt_manager.cpp
+    event_loop.cpp
+    encoder.cpp
 )
 
 if (CONFIG_BSP_NOSSAT_BOX_LITE)

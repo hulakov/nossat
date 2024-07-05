@@ -32,8 +32,8 @@ void run_cylon_bounce(led_strip_handle_t led_strip)
 {
     constexpr const double MIN = 1.5;
     constexpr const double MAX = 6.5;
-    constexpr const double DELTA = 0.1;
-    constexpr const double DELAY_MS = 10;
+    constexpr const double DELTA = 0.1 * 2.5;
+    constexpr const double DELAY_MS = 15 * 2.5;
 
     double position = MIN;
     int direction = 1;

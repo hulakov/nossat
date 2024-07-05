@@ -3,6 +3,7 @@
 #include "sanity_checks.h"
 #include "secrets.h"
 #include "speech_recognition.h"
+#include "encoder.h"
 
 #include <HaBridge.h>
 #include <MQTTRemote.h>
@@ -30,6 +31,12 @@ MQTTRemote mqtt_remote(DEVICE_NAME, MQTT_HOSTNAME, MQTT_PORT, MQTT_USERNAME, MQT
 nlohmann::json json_this_device_doc = make_device_doc_json();
 HaBridge ha_bridge(mqtt_remote, "test", json_this_device_doc);
 std::vector<std::shared_ptr<HaEntityEvent>> ha_events;
+
+auto event_loop = std::make_shared<EventLoop>();
+auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
+
+auto encoder1 = std::make_shared<Encoder>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
+auto encoder2 = std::make_shared<Encoder>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
 
 std::string command_to_event_id(std::string input)
 {
@@ -101,6 +108,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Compile time: %s %s", __DATE__, __TIME__);
 
     ESP_LOGI(TAG, "******* Initialize Board *******");
+    interrupt_manager->initialize();
     Board::instance().initialize();
     Board::instance().show_message(Board::HELLO, "Hello!");
 
@@ -145,6 +153,20 @@ void app_main(void)
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     Board::instance().hide_message();
+
+    encoder1->set_step_value(4);
+    encoder1->set_value_changed_handler([](int previous_value, int new_value)
+                                        { ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value); });
+    encoder1->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
+    encoder1->initialize(interrupt_manager);
+
+    encoder2->set_step_value(4);
+    encoder2->set_value_changed_handler([](int previous_value, int new_value)
+                                        { ESP_LOGI(TAG, "[right] changed %d -> %d", previous_value, new_value); });
+    encoder2->set_click_handler([]() { ESP_LOGI(TAG, "[right] click"); });
+    encoder2->initialize(interrupt_manager);
+
+    event_loop->run();
 
     ESP_LOGI(TAG, "******* Ready! *******");
 }
