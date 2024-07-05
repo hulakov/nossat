@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "bsp/esp-nossat-one.h"
+#include "bsp_err.h"
 
 #include "driver/gpio.h"
 #include "sdkconfig.h"
@@ -16,39 +17,17 @@
 
 const char *TAG = "esp-nossat-one";
 
+/* Display */
+#define BSP_LCD_H_RES (160)
+#define BSP_LCD_V_RES (128)
+#define BSP_LCD_PIXEL_CLOCK_HZ (20 * 1000 * 1000)
+#define BSP_LCD_SPI_NUM (SPI2_HOST)
 #define LCD_CMD_BITS 8
 #define LCD_PARAM_BITS 8
 #define LCD_LEDC_CH CONFIG_BSP_DISPLAY_BRIGHTNESS_LEDC_CH
 
 /* LCD display color bits */
 #define BSP_LCD_BITS_PER_PIXEL (16)
-
-#define BSP_ERROR_CHECK_RETURN_NULL(x)                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (unlikely((x) != ESP_OK))                                                                                   \
-        {                                                                                                              \
-            return NULL;                                                                                               \
-        }                                                                                                              \
-    } while (0)
-
-#define BSP_NULL_CHECK(x, ret)                                                                                         \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if ((x) == NULL)                                                                                               \
-        {                                                                                                              \
-            return ret;                                                                                                \
-        }                                                                                                              \
-    } while (0)
-#define BSP_ERROR_CHECK_RETURN_ERR(x)                                                                                  \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        esp_err_t err_rc_ = (x);                                                                                       \
-        if (unlikely(err_rc_ != ESP_OK))                                                                               \
-        {                                                                                                              \
-            return err_rc_;                                                                                            \
-        }                                                                                                              \
-    } while (0)
 
 static esp_err_t bsp_display_brightness_init(void)
 {

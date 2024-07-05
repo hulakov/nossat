@@ -9,6 +9,7 @@
 #include "freertos/FreeRTOS.h"
 #include "led_strip.h"
 #include "sanity_checks.h"
+#include "led_blinker.h"
 
 const constexpr char *TAG = "board";
 
@@ -26,14 +27,12 @@ extern "C"
 void lvgl_ui_main(lv_disp_t *disp);
 }
 
-constexpr const gpio_num_t GPIO_BLINK = GPIO_NUM_1;
 struct Board::Data
 {
     i2s_chan_handle_t rx_handle = nullptr;
 
     led_strip_handle_t led_strip;
 
-    void configure_led();
     void enable_led(uint32_t red, uint32_t green, uint32_t blue);
     void disable_led();
 };
@@ -46,31 +45,10 @@ Board::~Board()
 {
 }
 
-void Board::Data::configure_led()
-{
-    led_strip_config_t strip_config = {
-        .strip_gpio_num = GPIO_BLINK,             // The GPIO that connected to the LED strip's data line
-        .max_leds = 1,                            // The number of LEDs in the strip,
-        .led_pixel_format = LED_PIXEL_FORMAT_GRB, // Pixel format of your LED strip
-        .led_model = LED_MODEL_WS2812,            // LED strip model
-        .flags = {.invert_out = false},           // whether to invert the output signal (useful
-                                                  // when your hardware has a level inverter)
-    };
-
-    led_strip_rmt_config_t rmt_config = {
-        .clk_src = RMT_CLK_SRC_DEFAULT,    // different clock source can lead to
-                                           // different power consumption
-        .resolution_hz = 10 * 1000 * 1000, // 10MHz
-        .mem_block_symbols = 0,
-        .flags = {.with_dma = false}, // whether to enable the DMA feature
-    };
-
-    ENSURE_NO_ESP_ERRORS(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
-}
-
 void Board::Data::enable_led(uint32_t red, uint32_t green, uint32_t blue)
 {
-    ENSURE_NO_ESP_ERRORS(led_strip_set_pixel(led_strip, 0, red, green, blue));
+    for (int i = 0; i < NUM_LEDS; i++)
+        ENSURE_NO_ESP_ERRORS(led_strip_set_pixel(led_strip, i, red, green, blue));
     ENSURE_NO_ESP_ERRORS(led_strip_refresh(led_strip));
 }
 
@@ -118,7 +96,14 @@ void Board::initialize()
     ENSURE_NO_ESP_ERRORS(i2s_channel_enable(m_data->rx_handle));
 
     ESP_LOGI(TAG, "Initialize LED");
-    m_data->configure_led();
+    m_data->led_strip = bsp_led_strip_init();
+    TaskHandle_t led_task;
+    TaskFunction_t run_cylon_bounce_adapter = [](void *led_strip_ptr)
+    {
+        run_cylon_bounce(static_cast<led_strip_handle_t>(led_strip_ptr));
+        vTaskDelete(NULL);
+    };
+    xTaskCreatePinnedToCore(run_cylon_bounce_adapter, "LED Blinker", 4 * 1024, m_data->led_strip, 5, &led_task, 1);
 
     ESP_LOGI(TAG, "Initialize UI");
     bsp_display_cfg_t cfg = {.lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
@@ -162,24 +147,24 @@ bool Board::play_audio(const std::vector<uint8_t>::const_iterator &buffer_begin,
 
 bool Board::show_message(MessageType type, const char *message)
 {
-    switch (type)
-    {
-    case MessageType::HELLO:
-        m_data->enable_led(255, 0, 0);
-        break;
-    case MessageType::SAY_COMMAND:
-        m_data->enable_led(0, 0, 100);
-        break;
-    case MessageType::COMMAND_ACCEPTED:
-        m_data->enable_led(0, 100, 0);
-        break;
-    case MessageType::TIMEOUT:
-        m_data->enable_led(100, 0, 0);
-        break;
-    default:
-        m_data->enable_led(255, 255, 255);
-        return false;
-    }
+    // switch (type)
+    // {
+    // case MessageType::HELLO:
+    //     m_data->enable_led(255, 0, 0);
+    //     break;
+    // case MessageType::SAY_COMMAND:
+    //     m_data->enable_led(0, 0, 255);
+    //     break;
+    // case MessageType::COMMAND_ACCEPTED:
+    //     m_data->enable_led(0, 255, 0);
+    //     break;
+    // case MessageType::TIMEOUT:
+    //     m_data->enable_led(255, 0, 0);
+    //     break;
+    // default:
+    //     m_data->enable_led(255, 255, 255);
+    //     return false;
+    // }
 
     return true;
 }
@@ -187,6 +172,5 @@ bool Board::show_message(MessageType type, const char *message)
 bool Board::hide_message()
 {
     // m_data->disable_led();
-    m_data->enable_led(1, 1, 1);
     return true;
 }

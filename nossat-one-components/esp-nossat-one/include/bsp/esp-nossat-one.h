@@ -3,10 +3,8 @@
 #include "esp_lcd_types.h"
 #include "esp_err.h"
 #include "esp_lvgl_port.h"
+#include "led_strip.h"
 
-/**************************************************************************************************
- *  Nosbox One pinout
- **************************************************************************************************/
 /* Display */
 #define BSP_LCD_DATA0 (GPIO_NUM_7)
 #define BSP_LCD_PCLK (GPIO_NUM_15)
@@ -15,13 +13,10 @@
 #define BSP_LCD_RST (GPIO_NUM_6)
 #define BSP_LCD_BACKLIGHT (GPIO_NUM_16)
 
-/**************************************************************************************************
- *  Nosbox One constants
- **************************************************************************************************/
-#define BSP_LCD_H_RES (160)
-#define BSP_LCD_V_RES (128)
-#define BSP_LCD_PIXEL_CLOCK_HZ (20 * 1000 * 1000)
-#define BSP_LCD_SPI_NUM (SPI2_HOST)
+/* LED */
+#define GPIO_BLINK GPIO_NUM_48
+#define GPIO_LED_STRIP GPIO_NUM_1
+#define NUM_LEDS 8
 
 #ifdef __cplusplus
 extern "C"
@@ -85,6 +80,7 @@ esp_err_t bsp_spiffs_mount(void);
  */
 lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg);
 
+led_strip_handle_t bsp_led_strip_init();
 #ifdef __cplusplus
 }
 #endif
