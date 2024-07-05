@@ -1,4 +1,4 @@
 ## IDF Component Manager Manifest File
 dependencies:
   idf: ">=5.1"
-  espressif/esp-box-lite: "2.0.3"
+  espressif/esp-box-lite: "2.1.0"
