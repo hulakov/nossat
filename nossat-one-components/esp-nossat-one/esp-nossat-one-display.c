@@ -174,6 +174,7 @@ static lv_disp_t *bsp_display_lcd_init(void)
             },
         .flags = {
             .buff_dma = true,
+            .swap_bytes = true,
         }};
 
     return lvgl_port_add_disp(&disp_cfg);

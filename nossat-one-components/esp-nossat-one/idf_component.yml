@@ -1,7 +1,7 @@
 dependencies:
   esp_lvgl_port:
     public: true
-    version: ^1
+    version: 2.2.2
   espressif/led_strip:
     public: true
     version: "2.5.2"

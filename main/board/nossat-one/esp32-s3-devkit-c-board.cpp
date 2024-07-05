@@ -107,9 +107,6 @@ void Board::initialize()
 
     ESP_LOGI(TAG, "Initialize UI");
     bsp_display_cfg_t cfg = {.lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
-    cfg.lvgl_port_cfg.task_affinity = 1;
-    cfg.lvgl_port_cfg.task_priority = 10;
-    cfg.lvgl_port_cfg.task_max_sleep_ms = 50;
     lv_disp_t *disp = bsp_display_start_with_config(&cfg);
     lvgl_ui_main(disp);
 }
