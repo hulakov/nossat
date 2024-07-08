@@ -218,3 +218,13 @@ lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg)
 
     return disp;
 }
+
+bool bsp_display_lock(uint32_t timeout_ms)
+{
+    return lvgl_port_lock(timeout_ms);
+}
+
+void bsp_display_unlock(void)
+{
+    lvgl_port_unlock();
+}

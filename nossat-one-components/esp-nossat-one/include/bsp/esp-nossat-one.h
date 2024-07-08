@@ -80,6 +80,21 @@ esp_err_t bsp_spiffs_mount(void);
  */
 lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg);
 
+/**
+ * @brief Take LVGL mutex
+ *
+ * @param timeout_ms Timeout in [ms]. 0 will block indefinitely.
+ * @return true  Mutex was taken
+ * @return false Mutex was NOT taken
+ */
+bool bsp_display_lock(uint32_t timeout_ms);
+
+/**
+ * @brief Give LVGL mutex
+ *
+ */
+void bsp_display_unlock(void);
+
 led_strip_handle_t bsp_led_strip_init();
 #ifdef __cplusplus
 }
