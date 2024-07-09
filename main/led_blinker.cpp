@@ -3,37 +3,42 @@
 
 #include <cstdint>
 
+constexpr const int8_t HUE_MAX = 255;
+
 void color_wheel(int8_t hue, int8_t &red, int8_t &green, int8_t &blue)
 {
-    if (hue > 80)
+    if (hue > 2 * HUE_MAX / 3)
     {
-        int8_t shift = (hue - 80) * 3;
-        red = 120 + shift * 2;
+        int8_t shift = (hue - 2 * HUE_MAX / 3) * 3;
+        red = shift;
         green = 0;
-        blue = 255 - shift;
+        blue = HUE_MAX - shift;
     }
-    else if (hue > 40)
+    else if (hue > HUE_MAX / 3)
     {
-        int8_t shift = (hue - 40) * 3;
+        int8_t shift = (hue - HUE_MAX / 3) * 3;
         red = 0;
-        green = 255 - shift;
-        blue = 120 + shift * 2;
+        green = HUE_MAX - shift;
+        blue = shift;
     }
     else
     {
         int8_t shift = hue * 3;
-        red = (255 - shift);
-        green = 120 + shift * 2;
+        red = HUE_MAX - shift;
+        green = shift;
         blue = 0;
     }
+
+    // avoid extra bright red
+    red /= 5;
 }
 
 void run_cylon_bounce(led_strip_handle_t led_strip)
 {
     constexpr const double MIN = 1.5;
     constexpr const double MAX = 6.5;
-    constexpr const double DELTA = 0.1 * 2.5;
-    constexpr const double DELAY_MS = 15 * 2.5;
+    constexpr const double DELTA = 0.1 * 10;
+    constexpr const double DELAY_MS = 6 * 10 * 100;
 
     double position = MIN;
     int direction = 1;
@@ -47,7 +52,7 @@ void run_cylon_bounce(led_strip_handle_t led_strip)
         else if (position <= MIN)
             direction = 1;
 
-        hue = (hue + 1) % (255);
+        hue = (hue + 1) % HUE_MAX;
         int8_t red, green, blue;
         color_wheel(hue, red, green, blue);
 
@@ -64,6 +69,6 @@ void run_cylon_bounce(led_strip_handle_t led_strip)
         }
         ESP_ERROR_CHECK(led_strip_refresh(led_strip));
 
-        vTaskDelay(DELAY_MS / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(DELAY_MS));
     }
 }
