@@ -47,9 +47,6 @@ Board &Board::instance()
 
 void Board::initialize()
 {
-    ESP_LOGI(TAG, "Initialize SPIFFS");
-    ENSURE_NO_ESP_ERRORS(bsp_spiffs_mount());
-
     ESP_LOGI(TAG, "Initialize I2C");
     ENSURE_NO_ESP_ERRORS(bsp_i2c_init());
 

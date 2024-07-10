@@ -5,6 +5,7 @@ set(SOURCES
     interrupt_manager.cpp
     event_loop.cpp
     encoder.cpp
+    file_system.cpp
 )
 
 if (CONFIG_BSP_NOSSAT_BOX_LITE)

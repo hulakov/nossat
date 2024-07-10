@@ -3,7 +3,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-#define ENSURE_TRUE(x)                                                                                                 \
+#define ESP_TRUE_CHECK(x)                                                                                                 \
     do                                                                                                                 \
     {                                                                                                                  \
         if (unlikely(!(x)))                                                                                            \
@@ -13,3 +13,4 @@
     } while (false)
 
 #define ENSURE_NO_ESP_ERRORS ESP_ERROR_CHECK
+#define ENSURE_TRUE ESP_TRUE_CHECK

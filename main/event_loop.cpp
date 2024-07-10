@@ -1,7 +1,6 @@
 #include "event_loop.h"
 
-EventLoop::EventLoop()
-    : m_queue(xQueueCreate(10, sizeof(void*)))
+EventLoop::EventLoop() : m_queue(xQueueCreate(10, sizeof(void *)))
 {
 }
 
@@ -17,7 +16,12 @@ void EventLoop::run()
             delete handler;
         }
     }
+}
 
+void EventLoop::post(Handler handler)
+{
+    auto handler_ptr = new Handler(handler);
+    xQueueSend(m_queue, &handler_ptr, 0);
 }
 
 void EventLoop::post_from_isr(Handler handler)

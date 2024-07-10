@@ -179,6 +179,7 @@ static lv_disp_t *bsp_display_lcd_init(void)
 
     return lvgl_port_add_disp(&disp_cfg);
 }
+
 esp_err_t bsp_spiffs_mount()
 {
     esp_vfs_spiffs_conf_t conf = {
@@ -204,6 +205,11 @@ esp_err_t bsp_spiffs_mount()
     }
 
     return ret_val;
+}
+
+esp_err_t bsp_spiffs_umount()
+{
+    return esp_vfs_spiffs_unregister(CONFIG_BSP_SPIFFS_PARTITION_LABEL);
 }
 
 lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg)

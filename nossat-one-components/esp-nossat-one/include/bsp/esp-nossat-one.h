@@ -53,6 +53,19 @@ typedef struct
  */
 esp_err_t bsp_spiffs_mount(void);
 
+/**
+ * @brief Unmount SPIFFS from virtual file system
+ *
+ * @return
+ *      - ESP_OK on success
+ *      - ESP_ERR_NOT_FOUND if the partition table does not contain SPIFFS partition with given label
+ *      - ESP_ERR_INVALID_STATE if esp_vfs_spiffs_unregister was already called
+ *      - ESP_ERR_NO_MEM if memory can not be allocated
+ *      - ESP_FAIL if partition can not be mounted
+ *      - other error codes
+ */
+esp_err_t bsp_spiffs_umount();
+
 /**************************************************************************************************
  *
  * LCD interface

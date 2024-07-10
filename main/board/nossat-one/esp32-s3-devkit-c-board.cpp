@@ -11,6 +11,8 @@
 #include "sanity_checks.h"
 #include "led_blinker.h"
 
+#include <functional>
+
 const constexpr char *TAG = "board";
 
 const int Board::MICROPHONE_CHANNEL_COUNT = 1;
@@ -65,8 +67,6 @@ Board &Board::instance()
 
 void Board::initialize()
 {
-    ESP_LOGI(TAG, "Initialize SPIFFS");
-    ENSURE_NO_ESP_ERRORS(bsp_spiffs_mount());
 
     ESP_LOGI(TAG, "Initialize I2S");
 

@@ -1,29 +1,53 @@
 #pragma once
 
+#include "esp_afe_sr_iface.h"
+#include "esp_mn_iface.h"
+
+#include "event_loop.h"
+
 #include <functional>
 #include <memory>
 
 class SpeechRecognition
 {
-  private:
-    SpeechRecognition();
+  public:
+    struct IObserver
+    {
+        virtual void on_command_not_detected() = 0;
+        virtual void on_waiting_for_command() = 0;
+        virtual void on_command_handling_started(const char *message) = 0;
+        virtual void on_command_handling_finished() = 0;
+    };
+
+  public:
+    SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std::shared_ptr<IObserver> observer);
     ~SpeechRecognition();
 
   public:
-    static SpeechRecognition &instance();
-
-    void initialize();
-
+    using Handler = std::function<void()>;
     void begin_add_commands();
-    void add_command(std::vector<const char *> commands, std::function<void()> handler, const char *message = nullptr);
+    void add_command(std::vector<const char *> commands, Handler handler, const char *message = nullptr);
     void end_add_commands();
 
-    void handle_task();
+  public:
     void audio_feed_task();
     void audio_detect_task();
 
   private:
-    struct Data;
+    std::shared_ptr<EventLoop> m_event_loop;
+    std::shared_ptr<IObserver> m_observer;
 
-    std::unique_ptr<Data> m_data;
+  private:
+    struct Command
+    {
+        const char *message = nullptr;
+        Handler handler;
+    };
+    std::vector<Command> m_commands;
+
+  private:
+    const esp_afe_sr_iface_t *m_afe_handle;
+    esp_afe_sr_data_t *m_afe_data;
+    model_iface_data_t *m_model_data;
+    const esp_mn_iface_t *m_multinet;
 };

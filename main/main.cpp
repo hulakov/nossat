@@ -4,7 +4,7 @@
 #include "secrets.h"
 #include "speech_recognition.h"
 #include "encoder.h"
-
+#include "file_system.h"
 #include <HaBridge.h>
 #include <MQTTRemote.h>
 #include <entities/HaEntityEvent.h>
@@ -35,6 +35,87 @@ std::vector<std::shared_ptr<HaEntityEvent>> ha_events;
 auto event_loop = std::make_shared<EventLoop>();
 auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
 
+typedef struct
+{
+    // The "RIFF" chunk descriptor
+    uint8_t ChunkID[4];
+    int32_t ChunkSize;
+    uint8_t Format[4];
+    // The "fmt" sub-chunk
+    uint8_t Subchunk1ID[4];
+    int32_t Subchunk1Size;
+    int16_t AudioFormat;
+    int16_t NumChannels;
+    int32_t SampleRate;
+    int32_t ByteRate;
+    int16_t BlockAlign;
+    int16_t BitsPerSample;
+    // The "data" sub-chunk
+    uint8_t Subchunk2ID[4];
+    int32_t Subchunk2Size;
+} wav_header_t;
+
+bool play_wav(const std::vector<uint8_t> &buffer)
+{
+
+    auto wav_head = reinterpret_cast<const wav_header_t *>(&buffer[0]);
+    ESP_LOGI(TAG, "Play WAV: sample_rate=%d, channels=%d, bits_per_sample=%d", (int)wav_head->SampleRate,
+             (int)wav_head->NumChannels, (int)wav_head->BitsPerSample);
+
+    return Board::instance().play_audio(buffer.begin() + sizeof(wav_header_t), buffer.end(), wav_head->SampleRate,
+                                        wav_head->BitsPerSample, wav_head->NumChannels);
+}
+
+class SpeechRecognitionObserver : public SpeechRecognition::IObserver
+{
+  public:
+    const char *WAKE_WAV_PATH = "/spiffs/echo_en_wake.wav";
+    const char *RECOGNIZED_WAV_PATH = "/spiffs/echo_en_recognized.wav";
+    const char *NOT_RECOGNIZED_WAV_PATH = "/spiffs/echo_en_not_recognized.wav";
+
+    SpeechRecognitionObserver()
+    {
+        FileSystem file_system;
+        ESP_LOGI(TAG, "Load WAVs");
+        ESP_TRUE_CHECK(file_system.load_file(WAKE_WAV_PATH, m_wake_wav));
+        ESP_TRUE_CHECK(file_system.load_file(RECOGNIZED_WAV_PATH, m_recognized_wav));
+        ESP_TRUE_CHECK(file_system.load_file(NOT_RECOGNIZED_WAV_PATH, m_not_recognized_wav));
+    }
+
+    void on_command_not_detected() override
+    {
+        Board::instance().show_message(Board::TIMEOUT, "Timeout");
+        play_wav(m_not_recognized_wav);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        Board::instance().hide_message();
+    }
+
+    void on_waiting_for_command() override
+    {
+        Board::instance().show_message(Board::SAY_COMMAND, "Say command");
+        play_wav(m_wake_wav);
+    }
+
+    void on_command_handling_started(const char *message) override
+    {
+        Board::instance().show_message(Board::COMMAND_ACCEPTED, message);
+    }
+
+    void on_command_handling_finished() override
+    {
+        play_wav(m_recognized_wav);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        Board::instance().hide_message();
+    }
+
+  private:
+    std::vector<uint8_t> m_wake_wav;
+    std::vector<uint8_t> m_recognized_wav;
+    std::vector<uint8_t> m_not_recognized_wav;
+};
+
+std::unique_ptr<SpeechRecognition> speech_recognition;
+
 auto encoder1 = std::make_shared<Encoder>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
 auto encoder2 = std::make_shared<Encoder>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
 
@@ -58,12 +139,12 @@ void add_command(std::vector<const char *> commands)
 
     const auto handler = [ha_event]() { ha_event->publishEvent(VOICE_COMMAND_EVENT_TYPE); };
 
-    SpeechRecognition::instance().add_command(commands, handler);
+    speech_recognition->add_command(commands, handler);
 }
 
 void add_commands()
 {
-    SpeechRecognition::instance().begin_add_commands();
+    speech_recognition->begin_add_commands();
 
     add_command({"Toggle the Light", "Light"});
     add_command({"Turn On the Light", "Switch On the Light"});
@@ -86,7 +167,7 @@ void add_commands()
     add_command({"Mute"});
     add_command({"Unmute"});
 
-    SpeechRecognition::instance().end_add_commands();
+    speech_recognition->end_add_commands();
 }
 
 nlohmann::json make_device_doc_json()
@@ -122,16 +203,16 @@ void app_main(void)
     ESP_LOGI(TAG, "Connect to MQTT");
     mqtt_remote.start();
     while (!mqtt_remote.connected())
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(1000));
 
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
-    SpeechRecognition::instance().initialize();
+    speech_recognition = std::make_unique<SpeechRecognition>(event_loop, std::make_unique<SpeechRecognitionObserver>());
 
     ESP_LOGI(TAG, "******* Start tasks *******");
     TaskHandle_t feed_task;
     TaskFunction_t audio_feed_task_adapter = [](void *)
     {
-        SpeechRecognition::instance().audio_feed_task();
+        speech_recognition->audio_feed_task();
         vTaskDelete(NULL);
     };
     ENSURE_TRUE(xTaskCreatePinnedToCore(audio_feed_task_adapter, "Feed Task", 4 * 1024, nullptr, 5, &feed_task, 0));
@@ -139,7 +220,7 @@ void app_main(void)
     TaskHandle_t detect_task;
     TaskFunction_t audio_detect_task_adapter = [](void *arg)
     {
-        SpeechRecognition::instance().audio_detect_task();
+        speech_recognition->audio_detect_task();
         vTaskDelete(NULL);
     };
     ENSURE_TRUE(xTaskCreatePinnedToCore(audio_detect_task_adapter, "Speech Recognition Task", 4 * 1024, nullptr, 5,
@@ -148,11 +229,16 @@ void app_main(void)
     TaskHandle_t handle_task;
     TaskFunction_t handle_task_adapter = [](void *arg)
     {
+        ESP_LOGI(TAG, "******* Add Speech Recognition Commands *******");
         add_commands();
-        SpeechRecognition::instance().handle_task();
+
+        ESP_LOGI(TAG, "******* Run Event Loop *******");
+        event_loop->run();
+
         vTaskDelete(NULL);
     };
-    ENSURE_TRUE(xTaskCreatePinnedToCore(handle_task_adapter, "Handle Task", 8 * 1024, nullptr, 1, &handle_task, 1));
+    ENSURE_TRUE(xTaskCreatePinnedToCore(handle_task_adapter, "Handle Task", 8 * 1024, nullptr, configMAX_PRIORITIES - 1,
+                                        &handle_task, 0));
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     Board::instance().hide_message();
@@ -172,8 +258,6 @@ void app_main(void)
                                         { ESP_LOGI(TAG, "[right] changed %d -> %d", previous_value, new_value); });
     encoder2->set_click_handler([]() { ESP_LOGI(TAG, "[right] click"); });
     encoder2->initialize(interrupt_manager);
-
-    event_loop->run();
 
     ESP_LOGI(TAG, "******* Ready! *******");
 }
