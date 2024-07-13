@@ -207,7 +207,7 @@ esp_err_t bsp_spiffs_mount()
     return ret_val;
 }
 
-esp_err_t bsp_spiffs_umount()
+esp_err_t bsp_spiffs_unmount()
 {
     return esp_vfs_spiffs_unregister(CONFIG_BSP_SPIFFS_PARTITION_LABEL);
 }

@@ -15,7 +15,7 @@ FileSystem::FileSystem()
 FileSystem::~FileSystem()
 {
     ESP_LOGI(TAG, "Deinitialize SPIFFS");
-    ESP_ERROR_CHECK(bsp_spiffs_umount());
+    ESP_ERROR_CHECK(bsp_spiffs_unmount());
 }
 
 bool FileSystem::load_file(const char *path, std::vector<uint8_t> &buffer)

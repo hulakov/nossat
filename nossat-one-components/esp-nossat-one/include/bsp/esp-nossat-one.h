@@ -72,7 +72,7 @@ esp_err_t bsp_spiffs_mount(void);
  *      - ESP_FAIL if partition can not be mounted
  *      - other error codes
  */
-esp_err_t bsp_spiffs_umount();
+esp_err_t bsp_spiffs_unmount();
 
 /**************************************************************************************************
  *

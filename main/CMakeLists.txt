@@ -10,19 +10,30 @@ set(SOURCES
 )
 
 if (CONFIG_BSP_NOSSAT_BOX_LITE)
-    message("Building for ESP32-S3-BOX-Lite")
-    list(APPEND BOARD_SOURCES
-        board/esp-box-lite/esp-box-lite-board.cpp
-        board/esp-box-lite/gui/lvgl_ui.cpp
-        board/esp-box-lite/gui/font/font_en_24.c
-        board/esp-box-lite/gui/image/mic_logo.c
+    message(STATUS "Building for Nosyna Satellite Box Lite")
 
-        hal/audio_input/audio_input_box.cpp
+    list(APPEND BOARD_SOURCES
+        board/nossat-box-lite/nossat-box-lite.cpp
+
+        hal/audio_input/audio_input_bsp.cpp
+        hal/audio_output/audio_output.cpp
+        hal/audio_output/audio_output_bsp.cpp
+
+        network/mqtt_manager.cpp
+    )
+
+
+
+    list(APPEND BOARD_SOURCES
+        lvgl/speech/lvgl_ui.cpp
+        lvgl/speech/font/font_en_24.c
+        lvgl/speech/image/mic_logo.c
+
     )
     set_source_files_properties(${BOARD_SOURCES}
         PROPERTIES COMPILE_OPTIONS -DLV_LVGL_H_INCLUDE_SIMPLE)
 elseif (CONFIG_BSP_NOSSAT_ONE)
-    message("Building for ESP32-S3-DevKit C")
+    message(STATUS "Building for Nosyna Satellite One")
     list(APPEND BOARD_SOURCES
         board/nossat-one/nossat-one.cpp
 

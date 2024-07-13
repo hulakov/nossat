@@ -23,5 +23,5 @@ void create_task(Proc proc, const char *name, uint32_t stack_depth, int priority
     };
 
     auto context = new TaskContext{.proc = proc};
-    ENSURE_TRUE(xTaskCreatePinnedToCore(adapter, name, stack_depth, context, priority, &handle, affinity));
+    ESP_TRUE_CHECK(xTaskCreatePinnedToCore(adapter, name, stack_depth, context, priority, &handle, affinity));
 }
