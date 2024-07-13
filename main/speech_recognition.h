@@ -4,6 +4,7 @@
 #include "esp_mn_iface.h"
 
 #include "event_loop.h"
+#include "hal/audio_input/audio_input.h"
 
 #include <functional>
 #include <memory>
@@ -20,7 +21,8 @@ class SpeechRecognition
     };
 
   public:
-    SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std::shared_ptr<IObserver> observer);
+    SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std::shared_ptr<IObserver> observer,
+                      std::shared_ptr<AudioInput> audio_input);
     ~SpeechRecognition();
 
   public:
@@ -36,6 +38,7 @@ class SpeechRecognition
   private:
     std::shared_ptr<EventLoop> m_event_loop;
     std::shared_ptr<IObserver> m_observer;
+    std::shared_ptr<AudioInput> m_audio_input;
 
   private:
     struct Command

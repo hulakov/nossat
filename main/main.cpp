@@ -35,6 +35,8 @@ std::vector<std::shared_ptr<HaEntityEvent>> ha_events;
 auto event_loop = std::make_shared<EventLoop>();
 auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
 
+auto audio_input = std::make_shared<AudioInput>();
+
 typedef struct
 {
     // The "RIFF" chunk descriptor
@@ -206,7 +208,8 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(1000));
 
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
-    speech_recognition = std::make_unique<SpeechRecognition>(event_loop, std::make_unique<SpeechRecognitionObserver>());
+    speech_recognition =
+        std::make_unique<SpeechRecognition>(event_loop, std::make_unique<SpeechRecognitionObserver>(), audio_input);
 
     ESP_LOGI(TAG, "******* Start tasks *******");
     TaskHandle_t feed_task;

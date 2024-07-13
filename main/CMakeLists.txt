@@ -15,6 +15,8 @@ if (CONFIG_BSP_NOSSAT_BOX_LITE)
         board/esp-box-lite/gui/lvgl_ui.cpp
         board/esp-box-lite/gui/font/font_en_24.c
         board/esp-box-lite/gui/image/mic_logo.c
+
+        hal/audio_input/audio_input_box.cpp
     )
     set_source_files_properties(${BOARD_SOURCES}
         PROPERTIES COMPILE_OPTIONS -DLV_LVGL_H_INCLUDE_SIMPLE)
@@ -23,6 +25,8 @@ elseif (CONFIG_BSP_NOSSAT_ONE)
     list(APPEND BOARD_SOURCES
         board/nossat-one/esp32-s3-devkit-c-board.cpp
         board/nossat-one/lvgl_ui.c
+
+        hal/audio_input/audio_input_inmp441.cpp
     )
 endif()
 

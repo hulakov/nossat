@@ -4,6 +4,7 @@
 #include "esp_err.h"
 #include "esp_lvgl_port.h"
 #include "led_strip.h"
+#include "driver/i2s_common.h"
 
 /* Display */
 #define BSP_LCD_DATA0 (GPIO_NUM_7)
@@ -17,6 +18,13 @@
 #define GPIO_BLINK GPIO_NUM_48
 #define GPIO_LED_STRIP GPIO_NUM_1
 #define NUM_LEDS 8
+
+/* I2S microphone */
+#define GPIO_I2S_LRCK GPIO_NUM_11 // WS
+#define GPIO_I2S_MCLK GPIO_NUM_NC
+#define GPIO_I2S_SCLK GPIO_NUM_12 // SCK
+#define GPIO_I2S_SDIN GPIO_NUM_10 // SD
+#define GPIO_I2S_DOUT GPIO_NUM_NC
 
 #ifdef __cplusplus
 extern "C"
@@ -109,6 +117,7 @@ bool bsp_display_lock(uint32_t timeout_ms);
 void bsp_display_unlock(void);
 
 led_strip_handle_t bsp_led_strip_init();
+
 #ifdef __cplusplus
 }
 #endif

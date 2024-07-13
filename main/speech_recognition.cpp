@@ -5,7 +5,6 @@
 #include "esp_afe_sr_models.h"
 #include "esp_mn_models.h"
 #include "esp_mn_speech_commands.h"
-#include "board/board.h"
 #include "model_path.h"
 
 #include <cstring>
@@ -14,8 +13,9 @@ const constexpr char *TAG = "speech_recognition";
 
 constexpr const int MULTINET_TIMEOUT_MS = 3000;
 
-SpeechRecognition::SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std::shared_ptr<IObserver> observer)
-    : m_event_loop(event_loop), m_observer(std::move(observer))
+SpeechRecognition::SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std::shared_ptr<IObserver> observer,
+                                     std::shared_ptr<AudioInput> audio_input)
+    : m_event_loop(event_loop), m_observer(std::move(observer)), m_audio_input(audio_input)
 {
     ESP_LOGI(TAG, "Load models");
     srmodel_list_t *models = esp_srmodel_init("model");
@@ -35,7 +35,7 @@ SpeechRecognition::SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std:
         .vad_mode = VAD_MODE_3,
         .wakenet_model_name = wm_name,
         .wakenet_model_name_2 = NULL,
-        .wakenet_mode = DET_MODE_2CH_90,
+        .wakenet_mode = DET_MODE_2CH_95,
         .afe_mode = SR_MODE_LOW_COST,
         .afe_perferred_core = 0,
         .afe_perferred_priority = 5,
@@ -45,9 +45,9 @@ SpeechRecognition::SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std:
         .agc_mode = AFE_MN_PEAK_AGC_MODE_2,
         .pcm_config =
             {
-                .total_ch_num = Board::MICROPHONE_CHANNEL_COUNT + Board::REFERENCE_CHANNEL_COUNT,
-                .mic_num = Board::MICROPHONE_CHANNEL_COUNT,
-                .ref_num = Board::REFERENCE_CHANNEL_COUNT,
+                .total_ch_num = AudioInput::MICROPHONE_CHANNEL_COUNT + AudioInput::REFERENCE_CHANNEL_COUNT,
+                .mic_num = AudioInput::MICROPHONE_CHANNEL_COUNT,
+                .ref_num = AudioInput::REFERENCE_CHANNEL_COUNT,
                 .sample_rate = 16000,
             },
         .debug_init = false,
@@ -78,14 +78,14 @@ SpeechRecognition::~SpeechRecognition()
 void SpeechRecognition::audio_feed_task()
 {
     int audio_chunksize = m_afe_handle->get_feed_chunksize(m_afe_data);
-    const int CHANNEL_COUNT = Board::MICROPHONE_CHANNEL_COUNT + Board::REFERENCE_CHANNEL_COUNT;
+    const int CHANNEL_COUNT = AudioInput::MICROPHONE_CHANNEL_COUNT + AudioInput::REFERENCE_CHANNEL_COUNT;
     ESP_LOGI(TAG, "audio_chunksize=%d, feed_channel=%d", audio_chunksize, CHANNEL_COUNT);
 
     std::vector<int16_t> audio_buffer(audio_chunksize * CHANNEL_COUNT);
 
     while (true)
     {
-        if (Board::instance().capture_audio(audio_buffer, audio_chunksize))
+        if (m_audio_input->capture_audio(audio_buffer, audio_chunksize))
         {
             m_afe_handle->feed(m_afe_data, &audio_buffer[0]);
         }
