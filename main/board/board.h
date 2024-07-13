@@ -1,5 +1,7 @@
 #pragma once
 
+#include "system/interrupt_manager.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -7,16 +9,9 @@
 
 class Board final
 {
-  private:
-    Board();
-    ~Board();
-
   public:
-    static Board &instance();
-    void initialize();
-    bool play_audio(const std::vector<uint8_t>::const_iterator &buffer_begin,
-                    const std::vector<uint8_t>::const_iterator &buffer_end, uint32_t sample_rate,
-                    uint32_t bits_per_sample, size_t channels);
+    Board(std::shared_ptr<InterruptManager> interrupt_manager);
+    ~Board();
 
     enum MessageType { HELLO, SAY_COMMAND, TIMEOUT, COMMAND_ACCEPTED };
 

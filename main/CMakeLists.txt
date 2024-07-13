@@ -4,11 +4,11 @@ set(SOURCES
     system/interrupt_manager.cpp
     system/event_loop.cpp
     system/task.cpp
+    system/file_system.cpp
 
     speech_recognition.cpp
     led_blinker.cpp
     encoder.cpp
-    file_system.cpp
 )
 
 if (CONFIG_BSP_NOSSAT_BOX_LITE)
@@ -30,6 +30,8 @@ elseif (CONFIG_BSP_NOSSAT_ONE)
         board/nossat-one/lvgl_ui.c
 
         hal/audio_input/audio_input_inmp441.cpp
+        hal/audio_output/audio_output.cpp
+        hal/audio_output/audio_output_max98357a.cpp
     )
 endif()
 

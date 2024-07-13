@@ -3,11 +3,12 @@
 #include "sanity_checks.h"
 #include "secrets.h"
 #include "speech_recognition.h"
-#include "encoder.h"
-#include "file_system.h"
 #include <HaBridge.h>
 #include <MQTTRemote.h>
 #include <entities/HaEntityEvent.h>
+#include "system/resource_manager.h"
+
+#include "hal/audio_output/audio_output.h"
 
 #include <WiFiHelper.h>
 #include <nlohmann/json.hpp>
@@ -34,94 +35,45 @@ nlohmann::json json_this_device_doc = make_device_doc_json();
 HaBridge ha_bridge(mqtt_remote, "test", json_this_device_doc);
 std::vector<std::shared_ptr<HaEntityEvent>> ha_events;
 
+ResourceManager resource_manager;
 auto event_loop = std::make_shared<EventLoop>();
 auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
+std::unique_ptr<Board> board;
 
 auto audio_input = std::make_shared<AudioInput>();
-
-typedef struct
-{
-    // The "RIFF" chunk descriptor
-    uint8_t ChunkID[4];
-    int32_t ChunkSize;
-    uint8_t Format[4];
-    // The "fmt" sub-chunk
-    uint8_t Subchunk1ID[4];
-    int32_t Subchunk1Size;
-    int16_t AudioFormat;
-    int16_t NumChannels;
-    int32_t SampleRate;
-    int32_t ByteRate;
-    int16_t BlockAlign;
-    int16_t BitsPerSample;
-    // The "data" sub-chunk
-    uint8_t Subchunk2ID[4];
-    int32_t Subchunk2Size;
-} wav_header_t;
-
-bool play_wav(const std::vector<uint8_t> &buffer)
-{
-
-    auto wav_head = reinterpret_cast<const wav_header_t *>(&buffer[0]);
-    ESP_LOGI(TAG, "Play WAV: sample_rate=%d, channels=%d, bits_per_sample=%d", (int)wav_head->SampleRate,
-             (int)wav_head->NumChannels, (int)wav_head->BitsPerSample);
-
-    return Board::instance().play_audio(buffer.begin() + sizeof(wav_header_t), buffer.end(), wav_head->SampleRate,
-                                        wav_head->BitsPerSample, wav_head->NumChannels);
-}
+auto audio_output = std::make_shared<AudioOutput>();
 
 class SpeechRecognitionObserver : public SpeechRecognition::IObserver
 {
   public:
-    const char *WAKE_WAV_PATH = "/spiffs/echo_en_wake.wav";
-    const char *RECOGNIZED_WAV_PATH = "/spiffs/echo_en_recognized.wav";
-    const char *NOT_RECOGNIZED_WAV_PATH = "/spiffs/echo_en_not_recognized.wav";
-
-    SpeechRecognitionObserver()
-    {
-        FileSystem file_system;
-        ESP_LOGI(TAG, "Load WAVs");
-        ESP_TRUE_CHECK(file_system.load_file(WAKE_WAV_PATH, m_wake_wav));
-        ESP_TRUE_CHECK(file_system.load_file(RECOGNIZED_WAV_PATH, m_recognized_wav));
-        ESP_TRUE_CHECK(file_system.load_file(NOT_RECOGNIZED_WAV_PATH, m_not_recognized_wav));
-    }
-
     void on_command_not_detected() override
     {
-        Board::instance().show_message(Board::TIMEOUT, "Timeout");
-        play_wav(m_not_recognized_wav);
+        board->show_message(Board::TIMEOUT, "Timeout");
+        audio_output->play_wav(resource_manager.not_recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        Board::instance().hide_message();
+        board->hide_message();
     }
 
     void on_waiting_for_command() override
     {
-        Board::instance().show_message(Board::SAY_COMMAND, "Say command");
-        play_wav(m_wake_wav);
+        board->show_message(Board::SAY_COMMAND, "Say command");
+        audio_output->play_wav(resource_manager.wake_wav);
     }
 
     void on_command_handling_started(const char *message) override
     {
-        Board::instance().show_message(Board::COMMAND_ACCEPTED, message);
+        board->show_message(Board::COMMAND_ACCEPTED, message);
     }
 
     void on_command_handling_finished() override
     {
-        play_wav(m_recognized_wav);
+        audio_output->play_wav(resource_manager.recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        Board::instance().hide_message();
+        board->hide_message();
     }
-
-  private:
-    std::vector<uint8_t> m_wake_wav;
-    std::vector<uint8_t> m_recognized_wav;
-    std::vector<uint8_t> m_not_recognized_wav;
 };
 
 std::shared_ptr<SpeechRecognition> speech_recognition;
-
-auto encoder1 = std::make_shared<Encoder>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
-auto encoder2 = std::make_shared<Encoder>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
 
 std::string command_to_event_id(std::string input)
 {
@@ -188,8 +140,6 @@ nlohmann::json make_device_doc_json()
 extern "C"
 {
 
-void set_lvgl_value(int32_t v);
-
 void app_main(void)
 {
     ESP_LOGI(TAG, "Nosyna Satelite is starting!");
@@ -197,8 +147,13 @@ void app_main(void)
 
     ESP_LOGI(TAG, "******* Initialize Board *******");
     interrupt_manager->initialize();
-    Board::instance().initialize();
-    Board::instance().show_message(Board::HELLO, "Hello!");
+
+    board = std::make_unique<Board>(interrupt_manager);
+
+    ESP_LOGI(TAG, "******* Run Event Loop *******");
+    create_task(std::bind(&EventLoop::run, event_loop), "Handle Task", 4 * 1024, configMAX_PRIORITIES - 1, 0);
+
+    board->show_message(Board::HELLO, "Hello!");
 
     ESP_LOGI(TAG, "******* Initialize Networking *******");
     ESP_LOGI(TAG, "Connect to WiFi");
@@ -215,36 +170,17 @@ void app_main(void)
 
     ESP_LOGI(TAG, "******* Start tasks *******");
     create_task(std::bind(&SpeechRecognition::audio_feed_task, speech_recognition), "Feed Task", 4 * 1024, 5, 1);
-    create_task(std::bind(&SpeechRecognition::audio_detect_task, speech_recognition), "Speech Recognition Task",
-                4 * 1024, 5, 0);
-
-    auto handle_task_adapter = []()
+    auto detect_task = []()
     {
         ESP_LOGI(TAG, "******* Add Speech Recognition Commands *******");
         add_commands();
-        ESP_LOGI(TAG, "******* Run Event Loop *******");
-        event_loop->run();
+        ESP_LOGI(TAG, "******* Start Speech Recognition *******");
+        speech_recognition->audio_detect_task();
     };
-    create_task(handle_task_adapter, "Handle Task", 8 * 1024, configMAX_PRIORITIES - 1, 0);
+    create_task(detect_task, "Detect Task", 8 * 1024, 5, 0);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    Board::instance().hide_message();
-
-    encoder1->set_step_value(4);
-    encoder1->set_value_changed_handler(
-        [](int previous_value, int new_value)
-        {
-            ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value);
-            set_lvgl_value(new_value);
-        });
-    encoder1->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
-    encoder1->initialize(interrupt_manager);
-
-    encoder2->set_step_value(4);
-    encoder2->set_value_changed_handler([](int previous_value, int new_value)
-                                        { ESP_LOGI(TAG, "[right] changed %d -> %d", previous_value, new_value); });
-    encoder2->set_click_handler([]() { ESP_LOGI(TAG, "[right] click"); });
-    encoder2->initialize(interrupt_manager);
+    board->hide_message();
 
     ESP_LOGI(TAG, "******* Ready! *******");
 }
