@@ -3,7 +3,7 @@
 #include "esp_afe_sr_iface.h"
 #include "esp_mn_iface.h"
 
-#include "event_loop.h"
+#include "system/event_loop.h"
 #include "hal/audio_input/audio_input.h"
 
 #include <functional>

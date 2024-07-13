@@ -1,9 +1,12 @@
 set(SOURCES
     main.cpp
+
+    system/interrupt_manager.cpp
+    system/event_loop.cpp
+    system/task.cpp
+
     speech_recognition.cpp
     led_blinker.cpp
-    interrupt_manager.cpp
-    event_loop.cpp
     encoder.cpp
     file_system.cpp
 )

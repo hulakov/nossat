@@ -18,6 +18,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "system/task.h"
+
 static const char *TAG = "main";
 static const char *DEVICE_NAME = "nossat_kitchen";
 static const std::string VOICE_COMMAND_EVENT_TYPE = "voice_command";
@@ -116,7 +118,7 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
     std::vector<uint8_t> m_not_recognized_wav;
 };
 
-std::unique_ptr<SpeechRecognition> speech_recognition;
+std::shared_ptr<SpeechRecognition> speech_recognition;
 
 auto encoder1 = std::make_shared<Encoder>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
 auto encoder2 = std::make_shared<Encoder>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
@@ -200,7 +202,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "******* Initialize Networking *******");
     ESP_LOGI(TAG, "Connect to WiFi");
-    ENSURE_TRUE(wifi_helper.connectToAp(WIFI_SSID, WIFI_PASSWORD));
+    ENSURE_TRUE(wifi_helper.connectToAp(WIFI_SSID, WIFI_PASSWORD, true, 5 * 60 * 1000));
 
     ESP_LOGI(TAG, "Connect to MQTT");
     mqtt_remote.start();
@@ -209,39 +211,21 @@ void app_main(void)
 
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
     speech_recognition =
-        std::make_unique<SpeechRecognition>(event_loop, std::make_unique<SpeechRecognitionObserver>(), audio_input);
+        std::make_shared<SpeechRecognition>(event_loop, std::make_unique<SpeechRecognitionObserver>(), audio_input);
 
     ESP_LOGI(TAG, "******* Start tasks *******");
-    TaskHandle_t feed_task;
-    TaskFunction_t audio_feed_task_adapter = [](void *)
-    {
-        speech_recognition->audio_feed_task();
-        vTaskDelete(NULL);
-    };
-    ENSURE_TRUE(xTaskCreatePinnedToCore(audio_feed_task_adapter, "Feed Task", 4 * 1024, nullptr, 5, &feed_task, 0));
+    create_task(std::bind(&SpeechRecognition::audio_feed_task, speech_recognition), "Feed Task", 4 * 1024, 5, 1);
+    create_task(std::bind(&SpeechRecognition::audio_detect_task, speech_recognition), "Speech Recognition Task",
+                4 * 1024, 5, 0);
 
-    TaskHandle_t detect_task;
-    TaskFunction_t audio_detect_task_adapter = [](void *arg)
-    {
-        speech_recognition->audio_detect_task();
-        vTaskDelete(NULL);
-    };
-    ENSURE_TRUE(xTaskCreatePinnedToCore(audio_detect_task_adapter, "Speech Recognition Task", 4 * 1024, nullptr, 5,
-                                        &detect_task, 1));
-
-    TaskHandle_t handle_task;
-    TaskFunction_t handle_task_adapter = [](void *arg)
+    auto handle_task_adapter = []()
     {
         ESP_LOGI(TAG, "******* Add Speech Recognition Commands *******");
         add_commands();
-
         ESP_LOGI(TAG, "******* Run Event Loop *******");
         event_loop->run();
-
-        vTaskDelete(NULL);
     };
-    ENSURE_TRUE(xTaskCreatePinnedToCore(handle_task_adapter, "Handle Task", 8 * 1024, nullptr, configMAX_PRIORITIES - 1,
-                                        &handle_task, 0));
+    create_task(handle_task_adapter, "Handle Task", 8 * 1024, configMAX_PRIORITIES - 1, 0);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     Board::instance().hide_message();
