@@ -123,14 +123,14 @@ bool Board::play_audio(const std::vector<uint8_t>::const_iterator &buffer_begin,
     return true;
 }
 
-bool Board::show_message(MessageType type, const char *message)
+bool Board::ui_show_message(MessageType type, const char *message)
 {
     ui_show_message(message, type == MessageType::SAY_COMMAND);
     bsp_display_backlight_on();
     return true;
 }
 
-bool Board::hide_message()
+bool Board::ui_hide_message()
 {
     bsp_display_backlight_off();
     ui_hide_message();

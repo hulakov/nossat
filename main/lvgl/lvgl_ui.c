@@ -1,4 +1,5 @@
-#include "lvgl.h"
+#include "lvgl_ui.h"
+
 #include <stdio.h>
 
 #include "bsp/esp-bsp.h"
@@ -24,7 +25,7 @@ void set_label_style(lv_obj_t *label)
     lv_obj_add_style(label, &style, 0);
 }
 
-void lvgl_ui_main(lv_disp_t *disp)
+void ui_lvgl_main(lv_disp_t *disp)
 {
     main_disp = disp;
 
@@ -61,7 +62,7 @@ void lvgl_ui_main(lv_disp_t *disp)
     // lv_anim_start(&a);
 }
 
-void set_lvgl_value(int32_t v)
+void ui_set_value(int32_t v)
 {
     bsp_display_lock(0);
     lv_arc_set_value(arc, v);
@@ -71,4 +72,12 @@ void set_lvgl_value(int32_t v)
     lv_label_set_text(label, buf);
 
     bsp_display_unlock();
+}
+
+void ui_show_message(const char *message)
+{
+}
+
+void ui_hide_message()
+{
 }

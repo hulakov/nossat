@@ -6,9 +6,7 @@ set(SOURCES
     system/task.cpp
     system/file_system.cpp
 
-    speech_recognition.cpp
-    led_blinker.cpp
-    encoder.cpp
+    speech_recognition/speech_recognition.cpp
 )
 
 if (CONFIG_BSP_NOSSAT_BOX_LITE)
@@ -26,12 +24,19 @@ if (CONFIG_BSP_NOSSAT_BOX_LITE)
 elseif (CONFIG_BSP_NOSSAT_ONE)
     message("Building for ESP32-S3-DevKit C")
     list(APPEND BOARD_SOURCES
-        board/nossat-one/esp32-s3-devkit-c-board.cpp
-        board/nossat-one/lvgl_ui.c
+        board/nossat-one/nossat-one.cpp
+
+
+        lvgl/lvgl_ui.c
 
         hal/audio_input/audio_input_inmp441.cpp
         hal/audio_output/audio_output.cpp
         hal/audio_output/audio_output_max98357a.cpp
+        hal/encoder/encoder.cpp
+        hal/led/led.cpp
+        hal/led/led_blinker.cpp
+
+        network/mqtt_manager.cpp
     )
 endif()
 
