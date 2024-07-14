@@ -1,0 +1,6 @@
+# Name,   Type,  SubType, Offset,          Size, Flags
+nvs,      data,      nvs,       ,           16K
+phy_init, data,      phy,       ,            4K
+coredump, data, coredump,       ,           64K
+app,       app,  factory,       ,         2500K
+storage,  data,   spiffs,       ,         1000K

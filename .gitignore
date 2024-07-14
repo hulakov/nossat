@@ -7,3 +7,4 @@ sdkconfig.old
 /debug.log
 /main/secrets.h
 /dependencies.lock
+/partition_table/

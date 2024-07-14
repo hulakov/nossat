@@ -14,7 +14,10 @@
 
 #include "WiFiHelper.h"
 #include "network/mqtt_manager.h"
+
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
 #include "speech_recognition/speech_recognition.h"
+#endif
 
 #include <thread>
 
@@ -38,7 +41,6 @@ auto audio_output = std::make_shared<AudioOutput>();
 WiFiHelper
     wifi_helper(DEVICE_NAME, []() { ESP_LOGI(TAG, "WiFI Connected"); }, []() { ESP_LOGI(TAG, "WiFI Disconnected"); });
 std::unique_ptr<MqttManager> mqtt_manager;
-std::shared_ptr<SpeechRecognition> speech_recognition;
 
 void initialize_encoders()
 {
@@ -58,6 +60,10 @@ void initialize_encoders()
     right_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[right] click"); });
     right_encoder->initialize(interrupt_manager);
 }
+
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
+
+std::shared_ptr<SpeechRecognition> speech_recognition;
 
 class SpeechRecognitionObserver : public SpeechRecognition::IObserver
 {
@@ -148,6 +154,7 @@ void initialize_speech_recognition()
     };
     create_task(detect_task, "Detect Task", 8 * 1024, 5, 0);
 }
+#endif
 
 void start()
 {
@@ -174,8 +181,12 @@ void start()
     ESP_LOGI(TAG, "Connect to MQTT");
     mqtt_manager = std::make_unique<MqttManager>(DEVICE_NAME);
 
+#ifdef CONFIG_NOSSAT_SPEECH_RECOGNITION
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
     initialize_speech_recognition();
+#else
+    ESP_LOGI(TAG, "******* Speech Recognition is disabled *******");
+#endif
 
     ESP_LOGI(TAG, "******* Ready! *******");
 

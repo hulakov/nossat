@@ -1,10 +1,14 @@
 menu "HMI Board Config"
-    choice BSP_BOARD
-        default BSP_NOSSAT_ONE
+    choice NOSSAT_BOARD
+        default NOSSAT_ONE_BOARD
         prompt "Select HMI Board"
-        config BSP_NOSSAT_BOX_LITE
+        config NOSSAT_BOX_LITE_BOARD
             bool "Nosyna Satellite Box Lite"
-        config BSP_NOSSAT_ONE
+        config NOSSAT_ONE_BOARD
             bool "Nosyna Satellite One"
     endchoice
+
+    config NOSSAT_SPEECH_RECOGNITION
+        bool "Enable Speech Recognition"
+        default "y"
 endmenu
