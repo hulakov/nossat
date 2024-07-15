@@ -22,11 +22,11 @@ i2s_chan_handle_t bsp_i2s_microphone_init()
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg =
             {
-                .mclk = GPIO_I2S_MCLK,
-                .bclk = GPIO_I2S_SCLK,
-                .ws = GPIO_I2S_LRCK,
-                .dout = GPIO_I2S_DOUT,
-                .din = GPIO_I2S_SDIN,
+                .mclk = GPIO_NUM_NC,
+                .bclk = GPIO_MICROPHONE_I2S_SCLK,
+                .ws = GPIO_MICROPHONE_I2S_LRCK,
+                .dout = GPIO_NUM_NC,
+                .din = GPIO_MICROPHONE_I2S_SDIN,
                 .invert_flags =
                     {
                         .mclk_inv = false,
