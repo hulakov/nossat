@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include "utils/audio_data/audio_data.h"
 #include <memory>
 
 class AudioOutput
@@ -9,10 +9,7 @@ class AudioOutput
     AudioOutput();
     ~AudioOutput();
 
-    bool play_audio(const std::vector<uint8_t>::const_iterator &buffer_begin,
-                    const std::vector<uint8_t>::const_iterator &buffer_end, uint32_t sample_rate,
-                    uint32_t bits_per_sample, size_t channels);
-    bool play_wav(const std::vector<uint8_t> &buffer);
+    bool play(const AudioData &audio);
 
   private:
     struct Impl;

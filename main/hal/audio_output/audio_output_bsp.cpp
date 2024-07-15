@@ -32,15 +32,13 @@ AudioOutput::~AudioOutput()
 {
 }
 
-bool AudioOutput::play_audio(const std::vector<uint8_t>::const_iterator &buffer_begin,
-                             const std::vector<uint8_t>::const_iterator &buffer_end, uint32_t sample_rate,
-                             uint32_t bits_per_sample, size_t channels)
+bool AudioOutput::play(const AudioData &audio)
 {
     esp_codec_dev_sample_info_t fs = {
-        .bits_per_sample = (uint8_t)bits_per_sample,
-        .channel = (uint8_t)channels,
+        .bits_per_sample = audio.bits_per_sample,
+        .channel = audio.num_channels,
         .channel_mask = 0,
-        .sample_rate = sample_rate,
+        .sample_rate = audio.sample_rate,
         .mclk_multiple = 0,
     };
     esp_err_t ret = esp_codec_dev_close(m_impl->play_dev_handle);
@@ -49,8 +47,7 @@ bool AudioOutput::play_audio(const std::vector<uint8_t>::const_iterator &buffer_
     ret |= esp_codec_dev_set_out_mute(m_impl->play_dev_handle, false);
     ret |= esp_codec_dev_set_out_vol(m_impl->play_dev_handle, 100);
     vTaskDelay(pdMS_TO_TICKS(50));
-    const size_t len = (buffer_end - buffer_begin) & 0xfffffffc;
-    ret |= esp_codec_dev_write(m_impl->play_dev_handle, const_cast<uint8_t *>(&*buffer_begin), len);
+    ret |= esp_codec_dev_write(m_impl->play_dev_handle, audio.data.data(), audio.data.size());
     vTaskDelay(pdMS_TO_TICKS(20));
 
     return true;

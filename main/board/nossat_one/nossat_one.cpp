@@ -76,7 +76,7 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
     {
         ui_show_message("Timeout");
         led->solid(255, 0, 0);
-        audio_output->play_wav(resource_manager.not_recognized_wav);
+        audio_output->play(resource_manager.not_recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
         ui_hide_message();
         led->clear();
@@ -86,7 +86,7 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
     {
         ui_show_message("Say command");
         led->solid(255, 255, 255);
-        audio_output->play_wav(resource_manager.wake_wav);
+        audio_output->play(resource_manager.wake_wav);
     }
 
     void on_command_handling_started(const char *message) override
@@ -97,7 +97,7 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
 
     void on_command_handling_finished() override
     {
-        audio_output->play_wav(resource_manager.recognized_wav);
+        audio_output->play(resource_manager.recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
         ui_hide_message();
         led->clear();

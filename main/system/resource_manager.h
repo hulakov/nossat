@@ -2,6 +2,7 @@
 
 #include "hal/file_system/file_system.h"
 #include "sanity_checks.h"
+#include "utils/audio_data/audio_data.h"
 
 #include <vector>
 
@@ -14,12 +15,20 @@ struct ResourceManager
     ResourceManager()
     {
         FileSystem file_system;
-        ESP_TRUE_CHECK(file_system.load_file(WAKE_WAV_PATH, wake_wav));
-        ESP_TRUE_CHECK(file_system.load_file(RECOGNIZED_WAV_PATH, recognized_wav));
-        ESP_TRUE_CHECK(file_system.load_file(NOT_RECOGNIZED_WAV_PATH, not_recognized_wav));
+        std::vector<uint8_t> buffer;
+
+        const auto load_resource_wav = [&buffer, &file_system](const char *name)
+        {
+            ESP_TRUE_CHECK(file_system.load_file(name, buffer));
+            return AudioData::load_wav(buffer);
+        };
+
+        wake_wav = load_resource_wav(WAKE_WAV_PATH);
+        recognized_wav = load_resource_wav(RECOGNIZED_WAV_PATH);
+        not_recognized_wav = load_resource_wav(NOT_RECOGNIZED_WAV_PATH);
     }
 
-    std::vector<uint8_t> wake_wav;
-    std::vector<uint8_t> recognized_wav;
-    std::vector<uint8_t> not_recognized_wav;
+    AudioData wake_wav;
+    AudioData recognized_wav;
+    AudioData not_recognized_wav;
 };

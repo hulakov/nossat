@@ -4,11 +4,12 @@ set(SOURCES
     system/interrupt_manager.cpp
     system/event_loop.cpp
     system/task.cpp
+
     hal/file_system/file_system.cpp
 
-    network/mqtt_manager.cpp
+    utils/audio_data/audio_data.cpp
 
-    hal/audio_output/audio_output.cpp
+    network/mqtt_manager.cpp
 )
 
 if (CONFIG_NOSSAT_SPEECH_RECOGNITION)
