@@ -10,7 +10,9 @@
 #include "hal/audio_input/audio_input.h"
 #include "hal/audio_output/audio_output.h"
 
+#if NOSSAT_LVGL_GUI
 #include "lvgl/lvgl_ui.h"
+#endif
 
 #include "WiFiHelper.h"
 #include "network/mqtt_manager.h"
@@ -49,7 +51,9 @@ void initialize_encoders()
         [](int previous_value, int new_value)
         {
             ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value);
+#if NOSSAT_LVGL_GUI
             ui_set_value(new_value);
+#endif
         });
     left_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
     left_encoder->initialize(interrupt_manager);
@@ -162,13 +166,17 @@ void start()
     interrupt_manager->initialize();
     create_task(std::bind(&EventLoop::run, event_loop), "Handle Task", 4 * 1024, configMAX_PRIORITIES - 1, 0);
 
-    ESP_LOGI(TAG, "******* Initialize UI *******");
+    led->solid(0, 0, 255);
+
+#if NOSSAT_LVGL_GUI
+    ESP_LOGI(TAG, "******* Initialize GUI *******");
     bsp_display_cfg_t cfg = {.lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
     lv_disp_t *disp = bsp_display_start_with_config(&cfg);
     ui_lvgl_main(disp);
-
     ui_show_message("Hello!");
-    led->solid(0, 0, 255);
+#else
+    ESP_LOGI(TAG, "******* GUI is disabled *******");
+#endif
 
     ESP_LOGI(TAG, "******* Initialize Controls *******");
     ESP_LOGI(TAG, "Initialize Encoders");
@@ -181,7 +189,7 @@ void start()
     ESP_LOGI(TAG, "Connect to MQTT");
     mqtt_manager = std::make_unique<MqttManager>(DEVICE_NAME);
 
-#ifdef CONFIG_NOSSAT_SPEECH_RECOGNITION
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
     initialize_speech_recognition();
 #else
@@ -191,6 +199,8 @@ void start()
     ESP_LOGI(TAG, "******* Ready! *******");
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
+#if NOSSAT_LVGL_GUI
     ui_hide_message();
+#endif
     led->clear();
 }

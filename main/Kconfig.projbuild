@@ -11,4 +11,8 @@ menu "HMI Board Config"
     config NOSSAT_SPEECH_RECOGNITION
         bool "Enable Speech Recognition"
         default "y"
+
+    config NOSSAT_LVGL_GUI
+        bool "Enable LVGL GUI"
+        default "y"
 endmenu
