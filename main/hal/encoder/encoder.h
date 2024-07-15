@@ -2,7 +2,6 @@
 
 #include "system/interrupt_manager.h"
 
-
 #include "driver/pulse_cnt.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
@@ -20,6 +19,9 @@ class Encoder : public std::enable_shared_from_this<Encoder>
 public:
     Encoder(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, gpio_num_t button_gpio_num);
     void initialize(std::shared_ptr<InterruptManager> interrupt_manager);
+
+    int get_value() const { return m_value; }
+    void set_value(int value);
 
     void set_step_value(int value) { m_step_value = value; }
     void set_value_changed_handler(ValueChangedHandler handler) { m_on_value_changed = handler; }
@@ -43,6 +45,6 @@ private:
     ClickHandler m_on_click;
 
     pcnt_unit_handle_t m_pcnt_unit = nullptr;
-    int m_last_value = 0;
+    int m_value = 0;
     int m_step_value = 1;
 };

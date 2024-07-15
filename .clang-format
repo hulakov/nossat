@@ -15,6 +15,7 @@ BraceWrapping:
 IndentExternBlock: NoIndent
 AlignAfterOpenBracket: Align
 IndentWidth: 4
+AccessModifierOffset: -4
 SortIncludes: false
 ColumnLimit: 120
-AllowShortFunctionsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: true

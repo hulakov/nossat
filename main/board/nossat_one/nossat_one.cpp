@@ -10,7 +10,7 @@
 #include "hal/audio_input/audio_input.h"
 #include "hal/audio_output/audio_output.h"
 
-#if NOSSAT_LVGL_GUI
+#if CONFIG_NOSSAT_LVGL_GUI
 #include "lvgl/lvgl_ui.h"
 #endif
 
@@ -47,22 +47,32 @@ std::unique_ptr<MqttManager> mqtt_manager;
 void initialize_encoders()
 {
     left_encoder->set_step_value(4);
-    left_encoder->set_value_changed_handler(
-        [](int previous_value, int new_value)
-        {
-            ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value);
-#if NOSSAT_LVGL_GUI
-            ui_set_value(new_value);
-#endif
-        });
+    left_encoder->set_value_changed_handler([](int previous_value, int new_value)
+                                            { ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value); });
     left_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
     left_encoder->initialize(interrupt_manager);
 
     right_encoder->set_step_value(4);
-    right_encoder->set_value_changed_handler([](int previous_value, int new_value)
-                                             { ESP_LOGI(TAG, "[right] changed %d -> %d", previous_value, new_value); });
-    right_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[right] click"); });
+    right_encoder->set_value_changed_handler(
+        [](int previous_value, int new_value)
+        {
+            ESP_LOGI(TAG, "[right] volume %d -> %d", previous_value, new_value);
+#if CONFIG_NOSSAT_LVGL_GUI
+            ui_set_value(new_value);
+#endif
+        });
+    right_encoder->set_click_handler(
+        []()
+        {
+            ESP_LOGI(TAG, "[right] click");
+            {
+                auto copy = resource_manager.not_recognized_wav;
+                copy.adjust_volume(right_encoder->get_value() / 100.0);
+                audio_output->play(copy);
+            }
+        });
     right_encoder->initialize(interrupt_manager);
+    right_encoder->set_value(10);
 }
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
@@ -71,20 +81,26 @@ std::shared_ptr<SpeechRecognition> speech_recognition;
 
 class SpeechRecognitionObserver : public SpeechRecognition::IObserver
 {
-  public:
+public:
     void on_command_not_detected() override
     {
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_show_message("Timeout");
+#endif
         led->solid(255, 0, 0);
         audio_output->play(resource_manager.not_recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_hide_message();
+#endif
         led->clear();
     }
 
     void on_waiting_for_command() override
     {
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_show_message("Say command");
+#endif
         led->solid(255, 255, 255);
         audio_output->play(resource_manager.wake_wav);
     }
@@ -92,14 +108,18 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
     void on_command_handling_started(const char *message) override
     {
         led->solid(0, 255, 0);
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_show_message(message);
+#endif
     }
 
     void on_command_handling_finished() override
     {
         audio_output->play(resource_manager.recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_hide_message();
+#endif
         led->clear();
     }
 };
@@ -168,7 +188,7 @@ void start()
 
     led->solid(0, 0, 255);
 
-#if NOSSAT_LVGL_GUI
+#if CONFIG_NOSSAT_LVGL_GUI
     ESP_LOGI(TAG, "******* Initialize GUI *******");
     bsp_display_cfg_t cfg = {.lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
     lv_disp_t *disp = bsp_display_start_with_config(&cfg);
@@ -199,7 +219,7 @@ void start()
     ESP_LOGI(TAG, "******* Ready! *******");
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-#if NOSSAT_LVGL_GUI
+#if CONFIG_NOSSAT_LVGL_GUI
     ui_hide_message();
 #endif
     led->clear();
