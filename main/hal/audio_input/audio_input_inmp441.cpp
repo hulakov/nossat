@@ -77,8 +77,8 @@ bool AudioInput::capture_audio(std::vector<int16_t> &buffer, size_t chunk_size)
         // voice signal.
         // https://invensense.tdk.com/wp-content/uploads/2015/02/INMP441.pdf
         buffer[i * 3 + 2] = 0;
-        buffer[i * 3 + 1] = m_impl->temp_buffer[i * 2 + 1] >> 16;
-        buffer[i * 3] = m_impl->temp_buffer[i * 2] >> 16;
+        buffer[i * 3 + 1] = m_impl->temp_buffer[i * 2 + 1] >> 14;
+        buffer[i * 3] = m_impl->temp_buffer[i * 2] >> 14;
     }
     return true;
 }

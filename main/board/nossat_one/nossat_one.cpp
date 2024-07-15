@@ -81,7 +81,7 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
     void on_waiting_for_command() override
     {
         ui_show_message("Say command");
-        led->solid(0, 0, 255);
+        led->solid(255, 255, 255);
         audio_output->play_wav(resource_manager.wake_wav);
     }
 
@@ -168,7 +168,7 @@ void start()
     ui_lvgl_main(disp);
 
     ui_show_message("Hello!");
-    led->solid(255, 255, 255);
+    led->solid(0, 0, 255);
 
     ESP_LOGI(TAG, "******* Initialize Controls *******");
     ESP_LOGI(TAG, "Initialize Encoders");
