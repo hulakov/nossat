@@ -4,7 +4,7 @@ set(SOURCES
     system/interrupt_manager.cpp
     system/event_loop.cpp
     system/task.cpp
-    system/file_system.cpp
+    hal/file_system/file_system.cpp
 
     network/mqtt_manager.cpp
 
