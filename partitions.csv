@@ -5,6 +5,5 @@ phy_init, data,      phy,       ,            4K
 coredump, data, coredump,       ,           64K
 ota_0,     app,    ota_0,       ,         2500K
 ota_1,     app,    ota_1,       ,         2500K
-spiffs,   data,   spiffs,       ,          800K
-storage,  data,   spiffs,       ,         1000K,
-model,    data,   spiffs,       ,         3005K,
+storage,  data,   spiffs,       ,         1000K
+model,    data,   spiffs,       ,         3005K
