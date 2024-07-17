@@ -9,6 +9,6 @@ public:
     FileSystem();
     ~FileSystem();
 
-    bool load_file(const char *path, std::vector<uint8_t> &buffer);
+    bool load_file(const char *path, std::vector<int8_t> &buffer);
     size_t get_file_size(const char *path);
 };

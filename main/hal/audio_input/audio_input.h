@@ -1,19 +1,18 @@
 #pragma once
 
+#include "utils/audio_data/audio_data.h"
+
 #include <vector>
 #include <memory>
 
 class AudioInput
 {
 public:
-    static const int MICROPHONE_CHANNEL_COUNT;
-    static const int REFERENCE_CHANNEL_COUNT;
-
-public:
     AudioInput();
     ~AudioInput();
 
-    bool capture_audio(std::vector<int16_t> &buffer, size_t chunk_size);
+    void capture_audio(AudioData &audio);
+    const AudioFormat &get_audio_format() const;
 
 private:
     struct Impl;

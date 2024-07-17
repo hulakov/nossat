@@ -12,6 +12,10 @@
 class SpeechRecognition
 {
 public:
+    static const AudioFormat AUDIO_FORMAT;
+    static const uint32_t INPUT_CHANNEL_COUNT;
+    static const uint32_t REFERENCE_CHANNEL_COUNT;
+
     struct IObserver
     {
         virtual void on_command_not_detected() = 0;
@@ -32,7 +36,8 @@ public:
     void end_add_commands();
 
 public:
-    void audio_feed_task();
+    size_t get_feed_chunksize() const;
+    void feed(const AudioData &audio);
     void audio_detect_task();
 
 private:

@@ -15,7 +15,7 @@ struct ResourceManager
     ResourceManager()
     {
         FileSystem file_system;
-        std::vector<uint8_t> buffer;
+        std::vector<int8_t> buffer;
 
         const auto load_resource_wav = [&buffer, &file_system](const char *name)
         {

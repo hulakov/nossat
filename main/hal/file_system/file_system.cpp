@@ -53,7 +53,7 @@ FileSystem::~FileSystem()
     ESP_ERROR_CHECK(bsp_spiffs_unmount());
 }
 
-bool FileSystem::load_file(const char *path, std::vector<uint8_t> &buffer)
+bool FileSystem::load_file(const char *path, std::vector<int8_t> &buffer)
 {
     auto fp = fopen(path, "rb");
     if (fp == nullptr)

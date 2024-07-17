@@ -19,6 +19,7 @@
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
 #include "speech_recognition/speech_recognition.h"
+#else
 #endif
 
 #include <thread>
@@ -162,13 +163,31 @@ void add_commands()
     speech_recognition->end_add_commands();
 }
 
+void audio_feed_task()
+{
+    const size_t audio_chunksize = speech_recognition->get_feed_chunksize();
+    const AudioFormat audio_format = audio_input->get_audio_format();
+
+    ESP_LOGI(TAG, "Run audio feed task: num_channels %lu, bits_per_sample %lu, sample_rate %lu",
+             audio_format.num_channels, audio_format.bits_per_sample, audio_format.sample_rate);
+
+    AudioData audio;
+    while (true)
+    {
+        audio.set_format(audio_format, audio_chunksize);
+        audio_input->capture_audio(audio);
+        audio.add_channels(SpeechRecognition::REFERENCE_CHANNEL_COUNT);
+        speech_recognition->feed(audio);
+    }
+}
+
 void initialize_speech_recognition()
 {
     speech_recognition =
         std::make_shared<SpeechRecognition>(event_loop, std::make_unique<SpeechRecognitionObserver>(), audio_input);
 
     ESP_LOGI(TAG, "******* Start tasks *******");
-    create_task(std::bind(&SpeechRecognition::audio_feed_task, speech_recognition), "Feed Task", 4 * 1024, 5, 1);
+    create_task(audio_feed_task, "Feed Task", 4 * 1024, 5, 1);
     auto detect_task = []()
     {
         ESP_LOGI(TAG, "******* Add Speech Recognition Commands *******");

@@ -13,6 +13,14 @@ const constexpr char *TAG = "speech_recognition";
 
 constexpr const int MULTINET_TIMEOUT_MS = 3000;
 
+const uint32_t SpeechRecognition::INPUT_CHANNEL_COUNT = 2;
+const uint32_t SpeechRecognition::REFERENCE_CHANNEL_COUNT = 1;
+const AudioFormat SpeechRecognition::AUDIO_FORMAT = {
+    .num_channels = INPUT_CHANNEL_COUNT + REFERENCE_CHANNEL_COUNT,
+    .bits_per_sample = 16,
+    .sample_rate = 16000,
+};
+
 SpeechRecognition::SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std::shared_ptr<IObserver> observer,
                                      std::shared_ptr<AudioInput> audio_input)
     : m_event_loop(event_loop), m_observer(std::move(observer)), m_audio_input(audio_input)
@@ -45,9 +53,9 @@ SpeechRecognition::SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std:
         .agc_mode = AFE_MN_PEAK_AGC_MODE_2,
         .pcm_config =
             {
-                .total_ch_num = AudioInput::MICROPHONE_CHANNEL_COUNT + AudioInput::REFERENCE_CHANNEL_COUNT,
-                .mic_num = AudioInput::MICROPHONE_CHANNEL_COUNT,
-                .ref_num = AudioInput::REFERENCE_CHANNEL_COUNT,
+                .total_ch_num = static_cast<int>(INPUT_CHANNEL_COUNT + REFERENCE_CHANNEL_COUNT),
+                .mic_num = static_cast<int>(INPUT_CHANNEL_COUNT),
+                .ref_num = static_cast<int>(REFERENCE_CHANNEL_COUNT),
                 .sample_rate = 16000,
             },
         .debug_init = false,
@@ -75,21 +83,15 @@ SpeechRecognition::~SpeechRecognition()
 {
 }
 
-void SpeechRecognition::audio_feed_task()
+size_t SpeechRecognition::get_feed_chunksize() const
 {
-    int audio_chunksize = m_afe_handle->get_feed_chunksize(m_afe_data);
-    const int CHANNEL_COUNT = AudioInput::MICROPHONE_CHANNEL_COUNT + AudioInput::REFERENCE_CHANNEL_COUNT;
-    ESP_LOGI(TAG, "audio_chunksize=%d, feed_channel=%d", audio_chunksize, CHANNEL_COUNT);
+    return m_afe_handle->get_feed_chunksize(m_afe_data);
+}
 
-    std::vector<int16_t> audio_buffer(audio_chunksize * CHANNEL_COUNT);
-
-    while (true)
-    {
-        if (m_audio_input->capture_audio(audio_buffer, audio_chunksize))
-        {
-            m_afe_handle->feed(m_afe_data, &audio_buffer[0]);
-        }
-    }
+void SpeechRecognition::feed(const AudioData &audio)
+{
+    assert(audio.get_format() == AUDIO_FORMAT);
+    m_afe_handle->feed(m_afe_data, audio.get_data_typed<int16_t>());
 }
 
 void SpeechRecognition::audio_detect_task()
