@@ -11,7 +11,7 @@
 
 class SpeechRecognition
 {
-  public:
+public:
     struct IObserver
     {
         virtual void on_command_not_detected() = 0;
@@ -20,27 +20,27 @@ class SpeechRecognition
         virtual void on_command_handling_finished() = 0;
     };
 
-  public:
+public:
     SpeechRecognition(std::shared_ptr<EventLoop> event_loop, std::shared_ptr<IObserver> observer,
                       std::shared_ptr<AudioInput> audio_input);
     ~SpeechRecognition();
 
-  public:
+public:
     using Handler = std::function<void()>;
     void begin_add_commands();
     void add_command(std::vector<const char *> commands, Handler handler, const char *message = nullptr);
     void end_add_commands();
 
-  public:
+public:
     void audio_feed_task();
     void audio_detect_task();
 
-  private:
+private:
     std::shared_ptr<EventLoop> m_event_loop;
     std::shared_ptr<IObserver> m_observer;
     std::shared_ptr<AudioInput> m_audio_input;
 
-  private:
+private:
     struct Command
     {
         const char *message = nullptr;
@@ -48,7 +48,7 @@ class SpeechRecognition
     };
     std::vector<Command> m_commands;
 
-  private:
+private:
     const esp_afe_sr_iface_t *m_afe_handle;
     esp_afe_sr_data_t *m_afe_data;
     model_iface_data_t *m_model_data;

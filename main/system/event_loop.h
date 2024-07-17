@@ -9,13 +9,13 @@ using Handler = std::function<void()>;
 
 class EventLoop : public std::enable_shared_from_this<EventLoop>
 {
-  public:
+public:
     EventLoop();
 
     void run();
     void post(Handler handler);
     void post_from_isr(Handler handler);
 
-  private:
+private:
     QueueHandle_t m_queue = nullptr;
 };

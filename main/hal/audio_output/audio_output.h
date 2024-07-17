@@ -5,13 +5,13 @@
 
 class AudioOutput
 {
-  public:
+public:
     AudioOutput();
     ~AudioOutput();
 
     bool play(const AudioData &audio);
 
-  private:
+private:
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 };

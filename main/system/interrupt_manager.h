@@ -9,8 +9,7 @@
 class InterruptManager : public std::enable_shared_from_this<InterruptManager>
 {
 public:
-    enum class State
-    {
+    enum class State {
         OFF,
         ON,
     };
@@ -25,6 +24,7 @@ public:
 private:
     esp_err_t gpio_configure(gpio_num_t gpio_num, gpio_int_type_t type);
     void on_state_changed(gpio_num_t gpio_num, State state);
+
 private:
     std::shared_ptr<EventLoop> m_event_loop;
 

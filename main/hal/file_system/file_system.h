@@ -5,7 +5,7 @@
 
 class FileSystem final
 {
-  public:
+public:
     FileSystem();
     ~FileSystem();
 

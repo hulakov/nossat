@@ -18,4 +18,4 @@ IndentWidth: 4
 AccessModifierOffset: -4
 SortIncludes: false
 ColumnLimit: 120
-AllowShortFunctionsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: InlineOnly

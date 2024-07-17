@@ -4,13 +4,13 @@
 
 class Led
 {
-  public:
+public:
     Led();
     ~Led();
 
     void solid(uint32_t red, uint32_t green, uint32_t blue);
     void clear();
 
-  private:
+private:
     led_strip_handle_t m_led_strip;
 };

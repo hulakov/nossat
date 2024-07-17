@@ -39,7 +39,7 @@ std::shared_ptr<SpeechRecognition> speech_recognition;
 
 class SpeechRecognitionObserver : public SpeechRecognition::IObserver
 {
-  public:
+public:
     void on_command_not_detected() override
     {
         ui_show_message("Timeout");
