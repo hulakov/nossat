@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/audio_data/audio_data.h"
+#include "sound/audio_data.h"
 #include <memory>
 
 class AudioOutput

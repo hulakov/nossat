@@ -4,7 +4,7 @@
 #include "esp_mn_iface.h"
 
 #include "system/event_loop.h"
-#include "hal/audio_input/audio_input.h"
+#include "hal/audio_input.h"
 
 #include <functional>
 #include <memory>

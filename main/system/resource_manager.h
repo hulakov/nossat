@@ -1,8 +1,8 @@
 #pragma once
 
-#include "hal/file_system/file_system.h"
+#include "hal/file_system.h"
 #include "sanity_checks.h"
-#include "utils/audio_data/audio_data.h"
+#include "sound/audio_data.h"
 
 #include <vector>
 

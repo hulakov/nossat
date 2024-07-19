@@ -1,40 +1,83 @@
 #include "board/board.h"
 
 #include "system/event_loop.h"
+#include "system/interrupt_manager.h"
 #include "system/resource_manager.h"
 #include "system/task.h"
 
-#include "hal/audio_input/audio_input.h"
-#include "hal/audio_output/audio_output.h"
+#include "hal/led.h"
+#include "hal/encoder.h"
+#include "hal/audio_input.h"
+#include "hal/audio_output.h"
+
+#if CONFIG_NOSSAT_LVGL_GUI
+#include "lvgl/lvgl_ui.h"
+#endif
 
 #include "WiFiHelper.h"
 #include "network/mqtt_manager.h"
-#include "speech_recognition/speech_recognition.h"
-#include "lvgl/speech/lvgl_ui.h"
-#include "esp_log.h"
-#include "bsp/esp-bsp.h"
 
-#include "secrets.h"
-#include "sanity_checks.h"
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
+#include "sound/speech_recognition.h"
+#else
+#endif
 
 #include <thread>
-#include <memory>
 
-static const char *DEVICE_NAME = "nossat_box_lite";
+#include "bsp/esp-bsp.h"
+#include "secrets.h"
+
+static const char *DEVICE_NAME = "nossat_one";
 static const char *TAG = "board";
 
 auto event_loop = std::make_shared<EventLoop>();
+auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
 ResourceManager resource_manager;
 
-button_handle_t button = nullptr;
-int btn_num = 0;
+auto led = std::make_shared<Led>();
+auto left_encoder = std::make_shared<Encoder>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
+auto right_encoder = std::make_shared<Encoder>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
 
-std::shared_ptr<AudioInput> audio_input;
-std::shared_ptr<AudioOutput> audio_output;
+auto audio_input = std::make_shared<AudioInput>();
+auto audio_output = std::make_shared<AudioOutput>();
 
 WiFiHelper
     wifi_helper(DEVICE_NAME, []() { ESP_LOGI(TAG, "WiFI Connected"); }, []() { ESP_LOGI(TAG, "WiFI Disconnected"); });
 std::unique_ptr<MqttManager> mqtt_manager;
+
+void initialize_encoders()
+{
+    left_encoder->set_step_value(4);
+    left_encoder->set_value_changed_handler([](int previous_value, int new_value)
+                                            { ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value); });
+    left_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
+    left_encoder->initialize(interrupt_manager);
+
+    right_encoder->set_step_value(4);
+    right_encoder->set_value_changed_handler(
+        [](int previous_value, int new_value)
+        {
+            ESP_LOGI(TAG, "[right] volume %d -> %d", previous_value, new_value);
+#if CONFIG_NOSSAT_LVGL_GUI
+            ui_set_value(new_value);
+#endif
+        });
+    right_encoder->set_click_handler(
+        []()
+        {
+            ESP_LOGI(TAG, "[right] click");
+            {
+                auto copy = resource_manager.not_recognized_wav;
+                copy.adjust_volume(right_encoder->get_value() / 100.0);
+                audio_output->play(copy);
+            }
+        });
+    right_encoder->initialize(interrupt_manager);
+    right_encoder->set_value(10);
+}
+
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
+
 std::shared_ptr<SpeechRecognition> speech_recognition;
 
 class SpeechRecognitionObserver : public SpeechRecognition::IObserver
@@ -42,33 +85,43 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
 public:
     void on_command_not_detected() override
     {
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_show_message("Timeout");
-        bsp_display_backlight_on();
+#endif
+        led->solid(255, 0, 0);
         audio_output->play(resource_manager.not_recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_hide_message();
-        bsp_display_backlight_off();
+#endif
+        led->clear();
     }
 
     void on_waiting_for_command() override
     {
-        ui_show_message("Say command", true);
-        bsp_display_backlight_on();
+#if CONFIG_NOSSAT_LVGL_GUI
+        ui_show_message("Say command");
+#endif
+        led->solid(255, 255, 255);
         audio_output->play(resource_manager.wake_wav);
     }
 
     void on_command_handling_started(const char *message) override
     {
+        led->solid(0, 255, 0);
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_show_message(message);
-        bsp_display_backlight_on();
+#endif
     }
 
     void on_command_handling_finished() override
     {
         audio_output->play(resource_manager.recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
+#if CONFIG_NOSSAT_LVGL_GUI
         ui_hide_message();
-        bsp_display_backlight_off();
+#endif
+        led->clear();
     }
 };
 
@@ -113,7 +166,7 @@ void add_commands()
 void audio_feed_task()
 {
     const size_t audio_chunksize = speech_recognition->get_feed_chunksize();
-    const AudioFormat &audio_format = audio_input->get_audio_format();
+    const AudioFormat audio_format = audio_input->get_audio_format();
 
     ESP_LOGI(TAG, "Run audio feed task: num_channels %lu, bits_per_sample %lu, sample_rate %lu",
              audio_format.num_channels, audio_format.bits_per_sample, audio_format.sample_rate);
@@ -144,38 +197,29 @@ void initialize_speech_recognition()
     };
     create_task(detect_task, "Detect Task", 8 * 1024, 5, 0);
 }
+#endif
 
 void start()
 {
-    ESP_LOGI(TAG, "******* Initialize Events *******");
+    ESP_LOGI(TAG, "******* Initialize Interrupts and Events *******");
+    interrupt_manager->initialize();
     create_task(std::bind(&EventLoop::run, event_loop), "Handle Task", 4 * 1024, configMAX_PRIORITIES - 1, 0);
 
-    ESP_LOGI(TAG, "******* Initialize UI *******");
+    led->solid(0, 0, 255);
 
-    ESP_LOGI(TAG, "Initialize display");
-    const bsp_display_cfg_t cfg = {
-        .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
-        .buffer_size = BSP_LCD_H_RES * CONFIG_BSP_LCD_DRAW_BUF_HEIGHT,
-        .double_buffer = 0,
-        .flags =
-            {
-                .buff_dma = true,
-                .buff_spiram = false,
-            },
-    };
+#if CONFIG_NOSSAT_LVGL_GUI
+    ESP_LOGI(TAG, "******* Initialize GUI *******");
+    bsp_display_cfg_t cfg = {.lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
     lv_disp_t *disp = bsp_display_start_with_config(&cfg);
-
-    ESP_LOGI(TAG, "Configure LVGL");
-    ui_initialize(disp);
-
+    ui_lvgl_main(disp);
     ui_show_message("Hello!");
-
-    ESP_LOGI(TAG, "******* Initialize Audio *******");
-    audio_input = std::make_shared<AudioInput>();
-    audio_output = std::make_shared<AudioOutput>();
+#else
+    ESP_LOGI(TAG, "******* GUI is disabled *******");
+#endif
 
     ESP_LOGI(TAG, "******* Initialize Controls *******");
-    ESP_ERROR_CHECK(bsp_iot_button_create(&button, &btn_num, BSP_BUTTON_NUM));
+    ESP_LOGI(TAG, "Initialize Encoders");
+    initialize_encoders();
 
     ESP_LOGI(TAG, "******* Initialize Networking *******");
     ESP_LOGI(TAG, "Connect to WiFi");
@@ -184,12 +228,18 @@ void start()
     ESP_LOGI(TAG, "Connect to MQTT");
     mqtt_manager = std::make_unique<MqttManager>(DEVICE_NAME);
 
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
     initialize_speech_recognition();
+#else
+    ESP_LOGI(TAG, "******* Speech Recognition is disabled *******");
+#endif
 
     ESP_LOGI(TAG, "******* Ready! *******");
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
+#if CONFIG_NOSSAT_LVGL_GUI
     ui_hide_message();
-    bsp_display_backlight_off();
+#endif
+    led->clear();
 }
