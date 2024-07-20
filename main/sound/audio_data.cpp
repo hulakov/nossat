@@ -129,3 +129,9 @@ void AudioData::adjust_volume(float factor)
         break;
     }
 }
+
+void AudioData::join(const AudioData &audio)
+{
+    assert(m_format == audio.m_format);
+    m_data.insert(m_data.end(), audio.m_data.begin(), audio.m_data.end());
+}

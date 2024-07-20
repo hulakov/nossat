@@ -11,9 +11,9 @@ struct AudioFormat
                other.sample_rate == sample_rate;
     }
 
-    uint32_t num_channels;
-    uint32_t bits_per_sample;
-    uint32_t sample_rate;
+    uint32_t num_channels = 0;
+    uint32_t bits_per_sample = 0;
+    uint32_t sample_rate = 0;
 };
 
 class AudioData
@@ -32,6 +32,8 @@ public:
     const int8_t *get_data() const { return m_data.data(); }
     template <typename T> const T *get_data_typed() const { return reinterpret_cast<const T *>(get_data()); }
     size_t get_size() const { return m_data.size(); }
+    bool is_empty() const { return m_format == AudioFormat(); }
+    void join(const AudioData &data);
 
     const AudioFormat &get_format() const { return m_format; }
     uint32_t get_num_channels() const { return m_format.num_channels; }
