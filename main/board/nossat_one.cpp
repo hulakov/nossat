@@ -11,7 +11,7 @@
 #include "hal/audio_output.h"
 
 #if CONFIG_NOSSAT_LVGL_GUI
-#include "lvgl/lvgl_ui.h"
+#include "lvgl/gui_one.h"
 #endif
 
 #include "WiFiHelper.h"
@@ -38,6 +38,9 @@ auto led = std::make_shared<Led>();
 auto left_encoder = std::make_shared<Encoder>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
 auto right_encoder = std::make_shared<Encoder>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
 
+std::shared_ptr<Display> display;
+std::shared_ptr<Gui> gui;
+
 auto audio_input = std::make_shared<AudioInput>();
 auto audio_output = std::make_shared<AudioOutput>();
 
@@ -59,7 +62,7 @@ void initialize_encoders()
         {
             ESP_LOGI(TAG, "[right] volume %d -> %d", previous_value, new_value);
 #if CONFIG_NOSSAT_LVGL_GUI
-            ui_set_value(new_value);
+            gui->set_value(new_value);
 #endif
         });
     right_encoder->set_click_handler(
@@ -86,13 +89,13 @@ public:
     void on_command_not_detected() override
     {
 #if CONFIG_NOSSAT_LVGL_GUI
-        ui_show_message("Timeout");
+        gui->show_message("Timeout");
 #endif
         led->solid(255, 0, 0);
         audio_output->play(resource_manager.not_recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
 #if CONFIG_NOSSAT_LVGL_GUI
-        ui_hide_message();
+        gui->hide_message();
 #endif
         led->clear();
     }
@@ -100,7 +103,7 @@ public:
     void on_waiting_for_command() override
     {
 #if CONFIG_NOSSAT_LVGL_GUI
-        ui_show_message("Say command");
+        gui->show_message("Say command");
 #endif
         led->solid(255, 255, 255);
         audio_output->play(resource_manager.wake_wav);
@@ -110,7 +113,7 @@ public:
     {
         led->solid(0, 255, 0);
 #if CONFIG_NOSSAT_LVGL_GUI
-        ui_show_message(message);
+        gui->show_message(message);
 #endif
     }
 
@@ -119,7 +122,7 @@ public:
         audio_output->play(resource_manager.recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
 #if CONFIG_NOSSAT_LVGL_GUI
-        ui_hide_message();
+        gui->hide_message();
 #endif
         led->clear();
     }
@@ -208,11 +211,9 @@ void start()
     led->solid(0, 0, 255);
 
 #if CONFIG_NOSSAT_LVGL_GUI
-    ESP_LOGI(TAG, "******* Initialize GUI *******");
-    bsp_display_cfg_t cfg = {.lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG()};
-    lv_disp_t *disp = bsp_display_start_with_config(&cfg);
-    ui_lvgl_main(disp);
-    ui_show_message("Hello!");
+    display = std::make_shared<Display>();
+    gui = std::make_shared<Gui>(display);
+    gui->show_message("Hello!");
 #else
     ESP_LOGI(TAG, "******* GUI is disabled *******");
 #endif
@@ -239,7 +240,7 @@ void start()
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 #if CONFIG_NOSSAT_LVGL_GUI
-    ui_hide_message();
+    gui->hide_message();
 #endif
     led->clear();
 }

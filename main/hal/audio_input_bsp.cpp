@@ -2,7 +2,7 @@
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "driver/i2s_std.h"
-#include "sanity_checks.h"
+#include "nossat_err.h"
 
 static const char *TAG = "audio_input";
 

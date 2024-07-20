@@ -1,10 +1,10 @@
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
-extern "C"
-{
-#include "bsp/esp-bsp.h"
-}
-#pragma GCC diagnostic pop
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+// extern "C"
+// {
+// #include "bsp/esp-bsp.h"
+// }
+// #pragma GCC diagnostic pop
 
 #include "esp_log.h"
 
@@ -104,8 +104,6 @@ void ui_initialize(lv_disp_t *disp)
 
 void ui_show_message(const char *text, bool animation)
 {
-    bsp_display_lock(0);
-
     g_sr_anim_active = animation;
     lv_label_set_text_static(g_sr_label, text);
 
@@ -126,13 +124,9 @@ void ui_show_message(const char *text, bool animation)
     }
 
     lv_obj_clear_flag(g_sr_mask, LV_OBJ_FLAG_HIDDEN);
-
-    bsp_display_unlock();
 }
 
 void ui_hide_message()
 {
-    bsp_display_lock(0);
     lv_obj_add_flag(g_sr_mask, LV_OBJ_FLAG_HIDDEN);
-    bsp_display_unlock();
 }

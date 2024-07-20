@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esp_err.h"
+#include "esp_log.h"
 
 #define BSP_ERROR_CHECK_RETURN_NULL(x)                                                                                 \
     do                                                                                                                 \
@@ -28,3 +29,12 @@
             return err_rc_;                                                                                            \
         }                                                                                                              \
     } while (0)
+
+#define ESP_TRUE_CHECK(x)                                                                                              \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (unlikely(!(x)))                                                                                            \
+        {                                                                                                              \
+            _esp_error_check_failed(ESP_FAIL, __FILE__, __LINE__, __ASSERT_FUNC, #x);                                  \
+        }                                                                                                              \
+    } while (false)

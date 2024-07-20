@@ -23,9 +23,11 @@ if (CONFIG_NOSSAT_BOX_LITE_BOARD)
         board/nossat_box_lite.cpp
         hal/audio_input_bsp.cpp
         hal/audio_output_bsp.cpp
+        hal/display_bsp.cpp
     )
 
     list(APPEND LVGL_SOURCES
+        lvgl/gui_box.cpp
         lvgl/speech/lvgl_ui.cpp
         lvgl/speech/font/font_en_24.c
         lvgl/speech/image/mic_logo.c
@@ -42,9 +44,12 @@ elseif (CONFIG_NOSSAT_ONE_BOARD)
         hal/encoder.cpp
         hal/led.cpp
         hal/led_blinker.cpp
+        hal/display_st7735.cpp
+        hal/display_st7735.c
     )
 
     list(APPEND LVGL_SOURCES
+        lvgl/gui_one.cpp
         lvgl/lvgl_ui.c
     )
 endif()

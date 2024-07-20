@@ -1,6 +1,6 @@
 #include "task.h"
 
-#include "sanity_checks.h"
+#include "nossat_err.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

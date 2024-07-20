@@ -10,12 +10,14 @@
 #include "WiFiHelper.h"
 #include "network/mqtt_manager.h"
 #include "sound/speech_recognition.h"
-#include "lvgl/speech/lvgl_ui.h"
+#include "lvgl/gui_box.h"
 #include "esp_log.h"
 #include "bsp/esp-bsp.h"
 
+#include "hal/display.h"
+
 #include "secrets.h"
-#include "sanity_checks.h"
+#include "nossat_err.h"
 
 #include <thread>
 #include <memory>
@@ -29,6 +31,8 @@ ResourceManager resource_manager;
 button_handle_t button = nullptr;
 int btn_num = 0;
 
+std::shared_ptr<Display> display;
+std::shared_ptr<Gui> gui;
 std::shared_ptr<AudioInput> audio_input;
 std::shared_ptr<AudioOutput> audio_output;
 
@@ -42,33 +46,33 @@ class SpeechRecognitionObserver : public SpeechRecognition::IObserver
 public:
     void on_command_not_detected() override
     {
-        ui_show_message("Timeout");
-        bsp_display_backlight_on();
+        gui->show_message("Timeout");
+        display->enable_backlight();
         audio_output->play(resource_manager.not_recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        ui_hide_message();
-        bsp_display_backlight_off();
+        gui->hide_message();
+        display->enable_backlight(false);
     }
 
     void on_waiting_for_command() override
     {
-        ui_show_message("Say command", true);
-        bsp_display_backlight_on();
+        gui->show_message("Say command", true);
+        display->enable_backlight();
         audio_output->play(resource_manager.wake_wav);
     }
 
     void on_command_handling_started(const char *message) override
     {
-        ui_show_message(message);
-        bsp_display_backlight_on();
+        gui->show_message(message);
+        display->enable_backlight();
     }
 
     void on_command_handling_finished() override
     {
         audio_output->play(resource_manager.recognized_wav);
         vTaskDelay(pdMS_TO_TICKS(1000));
-        ui_hide_message();
-        bsp_display_backlight_off();
+        gui->hide_message();
+        display->enable_backlight(false);
     }
 };
 
@@ -153,22 +157,10 @@ void start()
     ESP_LOGI(TAG, "******* Initialize UI *******");
 
     ESP_LOGI(TAG, "Initialize display");
-    const bsp_display_cfg_t cfg = {
-        .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
-        .buffer_size = BSP_LCD_H_RES * CONFIG_BSP_LCD_DRAW_BUF_HEIGHT,
-        .double_buffer = 0,
-        .flags =
-            {
-                .buff_dma = true,
-                .buff_spiram = false,
-            },
-    };
-    lv_disp_t *disp = bsp_display_start_with_config(&cfg);
+    display = std::make_shared<Display>();
+    gui = std::make_shared<Gui>(display);
 
-    ESP_LOGI(TAG, "Configure LVGL");
-    ui_initialize(disp);
-
-    ui_show_message("Hello!");
+    gui->show_message("Hello!");
 
     ESP_LOGI(TAG, "******* Initialize Audio *******");
     audio_input = std::make_shared<AudioInput>();
@@ -190,6 +182,6 @@ void start()
     ESP_LOGI(TAG, "******* Ready! *******");
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    ui_hide_message();
-    bsp_display_backlight_off();
+    gui->hide_message();
+    display->enable_backlight(false);
 }

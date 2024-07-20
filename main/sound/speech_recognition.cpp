@@ -1,6 +1,6 @@
 #include "speech_recognition.h"
 
-#include "sanity_checks.h"
+#include "nossat_err.h"
 
 #include "esp_afe_sr_models.h"
 #include "esp_mn_models.h"

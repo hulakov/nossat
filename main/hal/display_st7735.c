@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include "bsp/esp-nossat-one.h"
-#include "bsp_err.h"
 
+#include "nossat_err.h"
 #include "driver/gpio.h"
 #include "sdkconfig.h"
-#include "esp_log.h"
 #include "esp_lvgl_port.h"
 #include "esp_check.h"
 #include "driver/spi_master.h"
@@ -27,6 +26,15 @@ const char *TAG = "esp-nossat-one";
 
 /* LCD display color bits */
 #define BSP_LCD_BITS_PER_PIXEL (16)
+
+/**
+ * @brief BSP display configuration structure
+ *
+ */
+typedef struct
+{
+    int max_transfer_sz; /*!< Maximum transfer size, in bytes. */
+} bsp_display_config_t;
 
 static esp_err_t bsp_display_brightness_init(void)
 {
@@ -179,25 +187,15 @@ static lv_disp_t *bsp_display_lcd_init(void)
     return lvgl_port_add_disp(&disp_cfg);
 }
 
-lv_disp_t *bsp_display_start_with_config(const bsp_display_cfg_t *cfg)
+lv_disp_t *bsp_display_start_with_config()
 {
-    lv_disp_t *disp;
-    assert(cfg != NULL);
-    BSP_ERROR_CHECK_RETURN_NULL(lvgl_port_init(&cfg->lvgl_port_cfg));
+    const lvgl_port_cfg_t cfg = ESP_LVGL_PORT_INIT_CONFIG();
+    BSP_ERROR_CHECK_RETURN_NULL(lvgl_port_init(&cfg));
 
     BSP_ERROR_CHECK_RETURN_NULL(bsp_display_brightness_init());
 
+    lv_disp_t *disp;
     BSP_NULL_CHECK(disp = bsp_display_lcd_init(), NULL);
 
     return disp;
-}
-
-bool bsp_display_lock(uint32_t timeout_ms)
-{
-    return lvgl_port_lock(timeout_ms);
-}
-
-void bsp_display_unlock(void)
-{
-    lvgl_port_unlock();
 }

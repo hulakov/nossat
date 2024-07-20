@@ -64,14 +64,11 @@ void ui_lvgl_main(lv_disp_t *disp)
 
 void ui_set_value(int32_t v)
 {
-    bsp_display_lock(0);
     lv_arc_set_value(arc, v);
 
     char buf[16];
     snprintf(buf, sizeof(buf), "%d %%", (int)(v));
     lv_label_set_text(label, buf);
-
-    bsp_display_unlock();
 }
 
 void ui_show_message(const char *message)

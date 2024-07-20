@@ -1,7 +1,7 @@
 #include "audio_output.h"
 #include "esp_log.h"
 #include "bsp/esp-bsp.h"
-#include "sanity_checks.h"
+#include "nossat_err.h"
 
 static const char *TAG = "audio_output";
 
