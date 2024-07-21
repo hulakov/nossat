@@ -5,3 +5,5 @@ dependencies:
   espressif/led_strip:
     public: true
     version: "2.5.2"
+  espressif/knob: 0.1.5
+  espressif/button: 3.2.3

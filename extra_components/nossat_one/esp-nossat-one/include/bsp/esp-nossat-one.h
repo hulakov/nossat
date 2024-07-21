@@ -1,10 +1,6 @@
 #pragma once
 
-#include "esp_lcd_types.h"
-#include "esp_err.h"
-#include "esp_lvgl_port.h"
-#include "led_strip.h"
-#include "driver/i2s_common.h"
+#include "driver/gpio.h"
 
 /* Display */
 #define BSP_LCD_DATA0 (GPIO_NUM_7)

@@ -2,6 +2,7 @@
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "driver/i2s_std.h"
+#include "freertos/FreeRTOS.h"
 
 static const AudioFormat MICROPHONE_AUDIO_FORMAT = {
     .num_channels = 2,

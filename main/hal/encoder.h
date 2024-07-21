@@ -2,7 +2,9 @@
 
 #include "system/interrupt_manager.h"
 
-#include "driver/pulse_cnt.h"
+#include "iot_button.h"
+#include "iot_knob.h"
+
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 
@@ -10,8 +12,8 @@
 #include <functional>
 #include <chrono>
 
-using ValueChangedHandler = std::function<void(int previous_value, int new_value)>;
-using ClickHandler = std::function<void()>;
+using ValueChangedHandler = std::function<void(int value)>;
+using Handler = std::function<void()>;
 
 struct new_encoder_pcnt_channel_config_t;
 
@@ -19,22 +21,21 @@ class Encoder : public std::enable_shared_from_this<Encoder>
 {
 public:
     Encoder(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, gpio_num_t button_gpio_num);
-    void initialize(std::shared_ptr<InterruptManager> interrupt_manager);
+    void initialize(std::shared_ptr<EventLoop> event_loop);
 
-    int get_value() const { return m_value; }
+    int get_value() const;
     void set_value(int value);
 
     void set_step_value(int value) { m_step_value = value; }
     void set_value_changed_handler(ValueChangedHandler handler) { m_on_value_changed = handler; }
-    void set_click_handler(ClickHandler handler) { m_on_click = handler; }
+    void set_click_handler(Handler handler) { m_on_click = handler; }
+    void set_left_handler(Handler handler) { m_on_left = handler; }
+    void set_right_handler(Handler handler) { m_on_right = handler; }
 
 private:
-    static void gpio_isr_handler(void *user_ctx);
-    void new_isr_handler(gpio_num_t gpio_num);
-    void on_value_changed();
-    void on_click(InterruptManager::State state);
-
-    void new_encoder_channel(gpio_num_t edge_gpio_num, gpio_num_t level_gpio_num, bool increase);
+    void on_left();
+    void on_right();
+    void on_click();
 
 private:
     std::shared_ptr<EventLoop> m_event_loop;
@@ -43,11 +44,12 @@ private:
     const gpio_num_t m_button_gpio_num;
 
     ValueChangedHandler m_on_value_changed;
-    ClickHandler m_on_click;
+    Handler m_on_click;
+    Handler m_on_left;
+    Handler m_on_right;
 
-    pcnt_unit_handle_t m_pcnt_unit = nullptr;
-    int m_value = 0;
     int m_step_value = 1;
-    InterruptManager::State m_button_state = InterruptManager::State::OFF;
-    std::chrono::steady_clock::time_point m_button_state_begin;
+    int m_value_offset = 0;
+    button_handle_t m_button = 0;
+    knob_handle_t m_knob = 0;
 };

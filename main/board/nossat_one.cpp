@@ -50,19 +50,18 @@ std::unique_ptr<MqttManager> mqtt_manager;
 
 void initialize_encoders()
 {
-    left_encoder->set_step_value(4);
-    left_encoder->set_value_changed_handler([](int previous_value, int new_value)
-                                            { ESP_LOGI(TAG, "[left] changed %d -> %d", previous_value, new_value); });
+    left_encoder->set_step_value(2);
+    left_encoder->set_value_changed_handler([](int value) { ESP_LOGI(TAG, "[left] changed %d", value); });
     left_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
-    left_encoder->initialize(interrupt_manager);
+    left_encoder->initialize(event_loop);
 
-    right_encoder->set_step_value(4);
+    right_encoder->set_step_value(2);
     right_encoder->set_value_changed_handler(
-        [](int previous_value, int new_value)
+        [](int value)
         {
-            ESP_LOGI(TAG, "[right] volume %d -> %d", previous_value, new_value);
+            ESP_LOGI(TAG, "[right] volume %d", value);
 #if CONFIG_NOSSAT_LVGL_GUI
-            gui->set_value(new_value);
+            gui->set_value(value);
 #endif
         });
     right_encoder->set_click_handler(
@@ -75,7 +74,7 @@ void initialize_encoders()
                 audio_output->play(copy);
             }
         });
-    right_encoder->initialize(interrupt_manager);
+    right_encoder->initialize(event_loop);
     right_encoder->set_value(10);
 }
 

@@ -4,118 +4,96 @@
 
 static const char *TAG = "encoder";
 
+struct HandlerContext
+{
+    HandlerContext(std::shared_ptr<EventLoop> e, std::function<void()> h) : event_loop(e), handler(h) {}
+    std::shared_ptr<EventLoop> event_loop;
+    std::function<void()> handler;
+};
+
+static button_handle_t button_init(gpio_num_t gpio_num)
+{
+    const button_config_t cfg = {
+        .type = BUTTON_TYPE_GPIO,
+        .long_press_time = 1000,
+        .short_press_time = 200,
+        .gpio_button_config =
+            {
+                .gpio_num = gpio_num,
+                .active_level = 0,
+            },
+    };
+    return iot_button_create(&cfg);
+}
+
+static knob_handle_t knob_init(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num)
+{
+    const knob_config_t cfg = {
+        .default_direction = 0,
+        .gpio_encoder_a = static_cast<uint8_t>(s2_gpio_num),
+        .gpio_encoder_b = static_cast<uint8_t>(s1_gpio_num),
+        .enable_power_save = false,
+    };
+    return iot_knob_create(&cfg);
+}
+
 Encoder::Encoder(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, gpio_num_t button_gpio_num)
     : m_s1_gpio_num(s1_gpio_num), m_s2_gpio_num(s2_gpio_num), m_button_gpio_num(button_gpio_num)
 {
 }
 
-void Encoder::initialize(std::shared_ptr<InterruptManager> isr_manager)
+void Encoder::initialize(std::shared_ptr<EventLoop> event_loop)
 {
-    ESP_LOGI(TAG, "install pcnt unit");
-    pcnt_unit_config_t unit_config = {
-        .low_limit = SHRT_MIN,
-        .high_limit = SHRT_MAX,
-        .intr_priority = 0,
-        .flags =
-            {
-                .accum_count = true,
-            },
+    m_event_loop = event_loop;
+
+    ESP_LOGI(TAG, "Initialize knob button");
+    m_button = button_init(m_button_gpio_num);
+    m_knob = knob_init(m_s1_gpio_num, m_s2_gpio_num);
+
+    const auto handler_adapter = [](void *arg, void *data)
+    {
+        auto context = static_cast<HandlerContext *>(data);
+        context->event_loop->post([context] { context->handler(); });
     };
-    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &m_pcnt_unit));
 
-    ESP_LOGI(TAG, "set glitch filter");
-    pcnt_glitch_filter_config_t filter_config = {
-        .max_glitch_ns = 1000,
-    };
-    ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(m_pcnt_unit, &filter_config));
-
-    new_encoder_channel(m_s1_gpio_num, m_s2_gpio_num, false);
-    new_encoder_channel(m_s2_gpio_num, m_s1_gpio_num, true);
-    const auto on_value_changed_handler = std::bind(&Encoder::on_value_changed, shared_from_this());
-    const auto on_click_handler = std::bind(&Encoder::on_click, shared_from_this(), std::placeholders::_1);
-    ESP_ERROR_CHECK(isr_manager->add_interrupt_handler(m_s1_gpio_num, on_value_changed_handler, GPIO_INTR_NEGEDGE));
-    ESP_ERROR_CHECK(isr_manager->add_interrupt_handler(m_s2_gpio_num, on_value_changed_handler, GPIO_INTR_NEGEDGE));
-    ESP_ERROR_CHECK(isr_manager->add_interrupt_handler(m_button_gpio_num, on_click_handler, GPIO_INTR_ANYEDGE));
-
-    ESP_LOGI(TAG, "enable pcnt unit");
-    ESP_ERROR_CHECK(pcnt_unit_enable(m_pcnt_unit));
-    ESP_LOGI(TAG, "clear pcnt unit");
-    ESP_ERROR_CHECK(pcnt_unit_clear_count(m_pcnt_unit));
-    ESP_LOGI(TAG, "start pcnt unit");
-    ESP_ERROR_CHECK(pcnt_unit_start(m_pcnt_unit));
+    const auto click_context = new HandlerContext(m_event_loop, std::bind(&Encoder::on_click, shared_from_this()));
+    iot_button_register_cb(m_button, BUTTON_SINGLE_CLICK, handler_adapter, click_context);
+    const auto left_context = new HandlerContext(m_event_loop, std::bind(&Encoder::on_left, shared_from_this()));
+    iot_knob_register_cb(m_knob, KNOB_LEFT, handler_adapter, left_context);
+    const auto right_context = new HandlerContext(m_event_loop, std::bind(&Encoder::on_right, shared_from_this()));
+    iot_knob_register_cb(m_knob, KNOB_RIGHT, handler_adapter, right_context);
 }
 
 void Encoder::set_value(int value)
 {
-    int last_value = m_value;
-    m_value = value;
-    if (m_on_value_changed)
-        m_on_value_changed(last_value, value);
+    m_value_offset = value;
+    iot_knob_clear_count_value(m_knob);
+    if (m_on_value_changed != nullptr)
+        m_on_value_changed(get_value());
 }
 
-void Encoder::new_encoder_channel(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, bool increase)
+int Encoder::get_value() const
 {
-    ESP_LOGI(TAG, "install pcnt channels");
-    pcnt_chan_config_t chan_config = {
-        .edge_gpio_num = s1_gpio_num,
-        .level_gpio_num = s2_gpio_num,
-        .flags = {},
-    };
-    pcnt_channel_handle_t pcnt_chan = NULL;
-    ESP_ERROR_CHECK(pcnt_new_channel(m_pcnt_unit, &chan_config, &pcnt_chan));
-
-    ESP_LOGI(TAG, "set edge and level actions for pcnt channels");
-    if (increase)
-        ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_chan, PCNT_CHANNEL_EDGE_ACTION_DECREASE,
-                                                     PCNT_CHANNEL_EDGE_ACTION_INCREASE));
-    else
-        ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_chan, PCNT_CHANNEL_EDGE_ACTION_INCREASE,
-                                                     PCNT_CHANNEL_EDGE_ACTION_DECREASE));
-
-    ESP_ERROR_CHECK(
-        pcnt_channel_set_level_action(pcnt_chan, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    return m_value_offset + iot_knob_get_count_value(m_knob) / m_step_value;
 }
 
-void Encoder::on_value_changed()
+void Encoder::on_left()
 {
-    int count = 0;
-    ESP_ERROR_CHECK(pcnt_unit_get_count(m_pcnt_unit, &count));
-
-    int value = count / m_step_value;
-    if (m_value == value)
-        return;
-
-    int last_value = m_value;
-    m_value = value;
-
-    if (m_on_value_changed)
-        m_on_value_changed(last_value, value);
+    if (m_on_value_changed != nullptr)
+        m_on_value_changed(get_value());
+    if (m_on_left != nullptr)
+        m_on_left();
 }
 
-void Encoder::on_click(InterruptManager::State state)
+void Encoder::on_right()
 {
-    // const auto level = gpio_get_level(gpio_info->gpio_num);
-    // InterruptManager::State state = level;
-    if (state == InterruptManager::State::ON)
-    {
-        // ESP_LOGI(TAG, "ON");
-        m_button_state_begin = std::chrono::steady_clock::now();
-    }
-    else
-    {
-        // ESP_LOGI(TAG, "OFF");
-    }
+    if (m_on_value_changed != nullptr)
+        m_on_value_changed(get_value());
+    if (m_on_right != nullptr)
+        m_on_right();
+}
 
-    if (m_button_state == InterruptManager::State::ON && state == InterruptManager::State::OFF)
-    {
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        int duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - m_button_state_begin).count();
-
-        if (duration > 50)
-        {
-            ESP_LOGI(TAG, "click - %d ms", duration);
-            m_on_click();
-        }
-    }
-    m_button_state = state;
+void Encoder::on_click()
+{
+    m_on_click();
 }

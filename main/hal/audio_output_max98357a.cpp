@@ -4,6 +4,7 @@
 #include "driver/i2s_std.h"
 #include "driver/gpio.h"
 #include "bsp/esp-bsp.h"
+#include "freertos/FreeRTOS.h"
 
 struct AudioOutput::Impl
 {
