@@ -6,7 +6,7 @@
 #include "system/task.h"
 
 #include "hal/led.h"
-#include "hal/encoder.h"
+#include "hal/knob.h"
 #include "hal/audio_input.h"
 #include "hal/audio_output.h"
 
@@ -35,8 +35,8 @@ auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
 ResourceManager resource_manager;
 
 auto led = std::make_shared<Led>();
-auto left_encoder = std::make_shared<Encoder>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
-auto right_encoder = std::make_shared<Encoder>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
+auto left_encoder = std::make_shared<Knob>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
+auto right_encoder = std::make_shared<Knob>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
 
 std::shared_ptr<Display> display;
 std::shared_ptr<Gui> gui;
@@ -48,7 +48,7 @@ WiFiHelper
     wifi_helper(DEVICE_NAME, []() { ESP_LOGI(TAG, "WiFI Connected"); }, []() { ESP_LOGI(TAG, "WiFI Disconnected"); });
 std::unique_ptr<MqttManager> mqtt_manager;
 
-void initialize_encoders()
+void initialize_knobs()
 {
     left_encoder->set_step_value(2);
     left_encoder->set_value_changed_handler([](int value) { ESP_LOGI(TAG, "[left] changed %d", value); });
@@ -219,7 +219,7 @@ void start()
 
     ESP_LOGI(TAG, "******* Initialize Controls *******");
     ESP_LOGI(TAG, "Initialize Encoders");
-    initialize_encoders();
+    initialize_knobs();
 
     ESP_LOGI(TAG, "******* Initialize Networking *******");
     ESP_LOGI(TAG, "Connect to WiFi");

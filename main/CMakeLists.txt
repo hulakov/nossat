@@ -41,7 +41,7 @@ elseif (CONFIG_NOSSAT_ONE_BOARD)
         board/nossat_one.cpp
         hal/audio_input_inmp441.cpp
         hal/audio_output_max98357a.cpp
-        hal/encoder.cpp
+        hal/knob.cpp
         hal/led.cpp
         hal/led_blinker.cpp
         hal/display_st7735.cpp

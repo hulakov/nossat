@@ -17,10 +17,10 @@ using Handler = std::function<void()>;
 
 struct new_encoder_pcnt_channel_config_t;
 
-class Encoder : public std::enable_shared_from_this<Encoder>
+class Knob : public std::enable_shared_from_this<Knob>
 {
 public:
-    Encoder(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, gpio_num_t button_gpio_num);
+    Knob(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, gpio_num_t button_gpio_num);
     void initialize(std::shared_ptr<EventLoop> event_loop);
 
     int get_value() const;
