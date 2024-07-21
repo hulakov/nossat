@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <functional>
+#include <chrono>
 
 using ValueChangedHandler = std::function<void(int previous_value, int new_value)>;
 using ClickHandler = std::function<void()>;
@@ -47,4 +48,6 @@ private:
     pcnt_unit_handle_t m_pcnt_unit = nullptr;
     int m_value = 0;
     int m_step_value = 1;
+    InterruptManager::State m_button_state = InterruptManager::State::OFF;
+    std::chrono::steady_clock::time_point m_button_state_begin;
 };

@@ -94,8 +94,28 @@ void Encoder::on_value_changed()
 
 void Encoder::on_click(InterruptManager::State state)
 {
-    if (state == InterruptManager::State::OFF)
+    // const auto level = gpio_get_level(gpio_info->gpio_num);
+    // InterruptManager::State state = level;
+    if (state == InterruptManager::State::ON)
     {
-        m_on_click();
+        // ESP_LOGI(TAG, "ON");
+        m_button_state_begin = std::chrono::steady_clock::now();
     }
+    else
+    {
+        // ESP_LOGI(TAG, "OFF");
+    }
+
+    if (m_button_state == InterruptManager::State::ON && state == InterruptManager::State::OFF)
+    {
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        int duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - m_button_state_begin).count();
+
+        if (duration > 50)
+        {
+            ESP_LOGI(TAG, "click - %d ms", duration);
+            m_on_click();
+        }
+    }
+    m_button_state = state;
 }
