@@ -11,7 +11,7 @@
 #include "hal/audio_output.h"
 
 #if CONFIG_NOSSAT_LVGL_GUI
-#include "lvgl/gui_one.h"
+#include "gui/gui_one.h"
 #endif
 
 #include "WiFiHelper.h"

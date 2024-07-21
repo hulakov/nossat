@@ -27,16 +27,16 @@ if (CONFIG_NOSSAT_BOX_LITE_BOARD)
     )
 
     list(APPEND LVGL_SOURCES
-        lvgl/gui_box.cpp
-        lvgl/speech/lvgl_ui.cpp
-        lvgl/speech/font/font_en_24.c
-        lvgl/speech/image/mic_logo.c
+        gui/gui_box.cpp
 
+        gui/lvgl/speech_recognition.cpp
+        gui/lvgl/font/font_en_24.c
+        gui/lvgl/image/mic_logo.c
     )
-    set_source_files_properties(${LVGL_SOURCES}
-        PROPERTIES COMPILE_OPTIONS -DLV_LVGL_H_INCLUDE_SIMPLE)
+
 elseif (CONFIG_NOSSAT_ONE_BOARD)
     message(STATUS "Building for Nosyna Satellite One")
+
     list(APPEND SOURCES
         board/nossat_one.cpp
         hal/audio_input_inmp441.cpp
@@ -49,10 +49,17 @@ elseif (CONFIG_NOSSAT_ONE_BOARD)
     )
 
     list(APPEND LVGL_SOURCES
-        lvgl/gui_one.cpp
-        lvgl/lvgl_ui.c
+        gui/gui_one.cpp
+
+        gui/lvgl/speech_recognition.cpp
+        gui/lvgl/volume_control.c
+        gui/lvgl/font/font_en_24.c
+        gui/lvgl/image/mic_logo.c
     )
 endif()
+
+# set_source_files_properties(${LVGL_SOURCES}
+#     PROPERTIES COMPILE_OPTIONS -DLV_LVGL_H_INCLUDE_SIMPLE)
 
 idf_component_register(SRCS ${SOURCES} ${LVGL_SOURCES} INCLUDE_DIRS ".")
 

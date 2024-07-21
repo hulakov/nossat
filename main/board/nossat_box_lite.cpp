@@ -10,7 +10,7 @@
 #include "WiFiHelper.h"
 #include "network/mqtt_manager.h"
 #include "sound/speech_recognition.h"
-#include "lvgl/gui_box.h"
+#include "gui/gui_box.h"
 #include "esp_log.h"
 #include "bsp/esp-bsp.h"
 

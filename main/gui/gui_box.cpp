@@ -1,6 +1,6 @@
 #include "gui_box.h"
 #include "esp_log.h"
-#include "lvgl/speech/lvgl_ui.h"
+#include "lvgl/speech_recognition.h"
 
 #include <mutex>
 

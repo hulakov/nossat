@@ -1,6 +1,7 @@
 #include "gui_one.h"
 
-#include "lvgl/lvgl_ui.h"
+#include "lvgl/volume_control.h"
+#include "lvgl/speech_recognition.h"
 
 #include <mutex>
 

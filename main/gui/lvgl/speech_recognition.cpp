@@ -1,15 +1,9 @@
-// #pragma GCC diagnostic push
-// #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
-// extern "C"
-// {
-// #include "bsp/esp-bsp.h"
-// }
-// #pragma GCC diagnostic pop
+#include "speech_recognition.h"
 
 #include "esp_log.h"
 
-#include "font/font_en_24.h"
-#include "image/mic_logo.h"
+#include "gui/lvgl/font/font_en_24.h"
+#include "gui/lvgl/image/mic_logo.h"
 
 #include <cmath>
 
