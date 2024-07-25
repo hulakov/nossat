@@ -70,11 +70,3 @@ void ui_set_value(int32_t v)
     snprintf(buf, sizeof(buf), "%d %%", (int)(v));
     lv_label_set_text(label, buf);
 }
-
-void ui_show_message(const char *message)
-{
-}
-
-void ui_hide_message()
-{
-}
