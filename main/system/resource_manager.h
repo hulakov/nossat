@@ -20,7 +20,9 @@ struct ResourceManager
         const auto load_resource_wav = [&buffer, &file_system](const char *name)
         {
             ESP_TRUE_CHECK(file_system.load_file(name, buffer));
-            return AudioData::load_wav(buffer);
+            auto audio = AudioData::load_wav(buffer);
+            audio.adjust_volume(0.05);
+            return audio;
         };
 
         wake_wav = load_resource_wav(WAKE_WAV_PATH);
