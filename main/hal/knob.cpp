@@ -58,9 +58,11 @@ void Knob::initialize(std::shared_ptr<EventLoop> event_loop)
 
     const auto click_context = new HandlerContext(m_event_loop, std::bind(&Knob::on_click, shared_from_this()));
     iot_button_register_cb(m_button, BUTTON_SINGLE_CLICK, handler_adapter, click_context);
-    const auto left_context = new HandlerContext(m_event_loop, std::bind(&Knob::on_left, shared_from_this()));
+    const auto left_context =
+        new HandlerContext(m_event_loop, std::bind(&Knob::on_value_changed, shared_from_this(), true));
     iot_knob_register_cb(m_knob, KNOB_LEFT, handler_adapter, left_context);
-    const auto right_context = new HandlerContext(m_event_loop, std::bind(&Knob::on_right, shared_from_this()));
+    const auto right_context =
+        new HandlerContext(m_event_loop, std::bind(&Knob::on_value_changed, shared_from_this(), false));
     iot_knob_register_cb(m_knob, KNOB_RIGHT, handler_adapter, right_context);
 }
 
@@ -77,23 +79,30 @@ int Knob::get_value() const
     return m_value_offset + iot_knob_get_count_value(m_knob) / m_step_value;
 }
 
-void Knob::on_left()
-{
-    if (m_on_value_changed != nullptr)
-        m_on_value_changed(get_value());
-    if (m_on_left != nullptr)
-        m_on_left();
-}
-
-void Knob::on_right()
-{
-    if (m_on_value_changed != nullptr)
-        m_on_value_changed(get_value());
-    if (m_on_right != nullptr)
-        m_on_right();
-}
-
 void Knob::on_click()
 {
-    m_on_click();
+    if (m_on_click != nullptr)
+        m_on_click();
+}
+
+void Knob::on_value_changed(bool left)
+{
+    const int value = get_value();
+    if (m_last_reported_value == value)
+        return;
+    m_last_reported_value = value;
+
+    if (m_on_value_changed != nullptr)
+        m_on_value_changed(get_value());
+
+    if (left)
+    {
+        if (m_on_left != nullptr)
+            m_on_left();
+    }
+    else
+    {
+        if (m_on_right != nullptr)
+            m_on_right();
+    }
 }

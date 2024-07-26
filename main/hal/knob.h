@@ -33,9 +33,8 @@ public:
     void set_right_handler(Handler handler) { m_on_right = handler; }
 
 private:
-    void on_left();
-    void on_right();
     void on_click();
+    void on_value_changed(bool left);
 
 private:
     std::shared_ptr<EventLoop> m_event_loop;
@@ -50,6 +49,7 @@ private:
 
     int m_step_value = 1;
     int m_value_offset = 0;
+    int m_last_reported_value = 0;
     button_handle_t m_button = 0;
     knob_handle_t m_knob = 0;
 };
