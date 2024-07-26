@@ -51,10 +51,10 @@ elseif (CONFIG_NOSSAT_ONE_BOARD)
     list(APPEND LVGL_SOURCES
         gui/gui_one.cpp
 
-        gui/lvgl/speech_recognition.cpp
-        gui/lvgl/volume_control.c
-        gui/lvgl/font/font_en_24.c
-        gui/lvgl/image/mic_logo.c
+        gui/nossat-one/src/ui/images.c
+        gui/nossat-one/src/ui/screens.c
+        gui/nossat-one/src/ui/styles.c
+        gui/nossat-one/src/ui/ui.c
     )
 endif()
 

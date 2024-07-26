@@ -222,13 +222,16 @@ void start()
     initialize_knobs();
 
     ESP_LOGI(TAG, "******* Initialize Networking *******");
-    ESP_LOGI(TAG, "Connect to WiFi");
+    gui->show_message("Connecting to Wi-Fi...");
+    ESP_LOGI(TAG, "Connect to Wi-Fi");
     ESP_TRUE_CHECK(wifi_helper.connectToAp(WIFI_SSID, WIFI_PASSWORD, true, 5 * 60 * 1000));
 
     ESP_LOGI(TAG, "Connect to MQTT");
+    gui->show_message("Connecting to MQTT...");
     mqtt_manager = std::make_unique<MqttManager>(DEVICE_NAME);
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
+    gui->show_message("Connecting Speech Recognition...");
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
     initialize_speech_recognition();
 #else
@@ -237,7 +240,9 @@ void start()
 
     ESP_LOGI(TAG, "******* Ready! *******");
 
+    gui->show_message("Ready!");
     std::this_thread::sleep_for(std::chrono::seconds(1));
+
 #if CONFIG_NOSSAT_LVGL_GUI
     gui->hide_message();
 #endif
