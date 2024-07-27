@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 extern void apply_style_button(lv_obj_t *obj);
+extern void apply_style_switch(lv_obj_t *obj);
 
 
 #ifdef __cplusplus
