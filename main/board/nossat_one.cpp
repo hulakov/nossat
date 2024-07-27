@@ -7,6 +7,7 @@
 
 #include "hal/led.h"
 #include "hal/knob.h"
+#include "hal/lvgl_knob.h"
 #include "hal/audio_input.h"
 #include "hal/audio_output.h"
 
@@ -16,6 +17,8 @@
 
 #include "WiFiHelper.h"
 #include "network/mqtt_manager.h"
+
+#include "gui/nossat-one/src/ui/screens.h"
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
 #include "sound/speech_recognition.h"
@@ -35,8 +38,8 @@ auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
 ResourceManager resource_manager;
 
 auto led = std::make_shared<Led>();
-auto left_encoder = std::make_shared<Knob>(GPIO_NUM_14, GPIO_NUM_13, GPIO_NUM_9);
-auto right_encoder = std::make_shared<Knob>(GPIO_NUM_17, GPIO_NUM_18, GPIO_NUM_8);
+std::shared_ptr<Knob> left_encoder;
+std::shared_ptr<LvglKnob> right_encoder;
 
 std::shared_ptr<Display> display;
 std::shared_ptr<Gui> gui;
@@ -50,32 +53,14 @@ std::unique_ptr<MqttManager> mqtt_manager;
 
 void initialize_knobs()
 {
+    left_encoder = std::make_shared<Knob>(GPIO_LEFT_KNOB_S1, GPIO_LEFT_KNOB_S2, GPIO_LEFT_KNOB_KEY);
     left_encoder->set_step_value(2);
     left_encoder->set_value_changed_handler([](int value) { ESP_LOGI(TAG, "[left] changed %d", value); });
     left_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
     left_encoder->initialize(event_loop);
 
-    right_encoder->set_step_value(2);
-    right_encoder->set_value_changed_handler(
-        [](int value)
-        {
-            ESP_LOGI(TAG, "[right] volume %d", value);
-#if CONFIG_NOSSAT_LVGL_GUI
-            gui->set_value(value);
-#endif
-        });
-    right_encoder->set_click_handler(
-        []()
-        {
-            ESP_LOGI(TAG, "[right] click");
-            {
-                auto copy = resource_manager.not_recognized_wav;
-                copy.adjust_volume(right_encoder->get_value() / 100.0);
-                audio_output->play(copy);
-            }
-        });
-    right_encoder->initialize(event_loop);
-    right_encoder->set_value(10);
+    right_encoder = std::make_shared<LvglKnob>(display, GPIO_RIGHT_KNOB_S1, GPIO_RIGHT_KNOB_S2, GPIO_RIGHT_KNOB_KEY);
+    right_encoder->set_page(objects.main);
 }
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
@@ -231,7 +216,7 @@ void start()
     mqtt_manager = std::make_unique<MqttManager>(DEVICE_NAME);
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
-    gui->show_message("Connecting Speech Recognition...");
+    gui->show_message("Configuring Speech Recognition...");
     ESP_LOGI(TAG, "******* Initialize Speech Recognition *******");
     initialize_speech_recognition();
 #else

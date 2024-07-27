@@ -2,7 +2,7 @@
 
 #include "esp_log.h"
 
-static const char *TAG = "encoder";
+static const char *TAG = "knob";
 
 struct HandlerContext
 {
