@@ -1,17 +1,30 @@
 #pragma once
 
 #include "hal/display.h"
+#include "nossat-one/src/ui/ui.h"
+#include "system/event_loop.h"
+#include "hal/knob.h"
+#include "hal/lvgl_knob.h"
 
 class Gui
 {
 public:
-    Gui(std::shared_ptr<Display> display);
+    constexpr static const int PAGE_COUNT = 2;
+
+    Gui(std::shared_ptr<Display> display, std::shared_ptr<EventLoop> event_loop);
 
     void show_message(const char *message, bool animation = false);
-    void hide_message();
+    void show_current_page();
 
-    void set_value(int32_t value);
+private:
+    lv_obj_t *get_page(int page_index);
+    void switch_to_screen(bool right);
+    void initialize_knobs(std::shared_ptr<EventLoop> event_loop);
 
 private:
     std::shared_ptr<Display> m_display;
+    int m_current_page_index = 0;
+
+    std::shared_ptr<Knob> m_left_encoder;
+    std::shared_ptr<LvglKnob> m_right_encoder;
 };

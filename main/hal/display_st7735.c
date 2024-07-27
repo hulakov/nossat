@@ -66,19 +66,30 @@ static esp_err_t bsp_display_brightness_init(void)
 
 esp_err_t bsp_display_brightness_set(int brightness_percent)
 {
-    if (brightness_percent > 100)
+    if (brightness_percent == 0)
     {
-        brightness_percent = 100;
+        ESP_LOGI(TAG, "Turn off LCD backlight");
+        gpio_set_level(BSP_LCD_BACKLIGHT, 0);
     }
-    if (brightness_percent < 0)
+    else
     {
-        brightness_percent = 0;
+        ESP_LOGI(TAG, "Turn on LCD backlight");
+        gpio_set_level(BSP_LCD_BACKLIGHT, 1);
     }
 
-    ESP_LOGI(TAG, "Setting LCD backlight: %d%%", brightness_percent);
-    uint32_t duty_cycle = (1023 * (100 - brightness_percent)) / 100; // LEDC resolution set to 10bits, thus: 100% = 1023
-    BSP_ERROR_CHECK_RETURN_ERR(ledc_set_duty(LEDC_LOW_SPEED_MODE, LCD_LEDC_CH, duty_cycle));
-    BSP_ERROR_CHECK_RETURN_ERR(ledc_update_duty(LEDC_LOW_SPEED_MODE, LCD_LEDC_CH));
+    // if (brightness_percent > 100)
+    // {
+    //     brightness_percent = 100;
+    // }
+    // if (brightness_percent < 0)
+    // {
+    //     brightness_percent = 0;
+    // }
+
+    // ESP_LOGI(TAG, "Setting LCD backlight: %d%%", brightness_percent);
+    // uint32_t duty_cycle = (1023 * (100 - brightness_percent)) / 100; // LEDC resolution set to 10bits, thus: 100% =
+    // 1023 BSP_ERROR_CHECK_RETURN_ERR(ledc_set_duty(LEDC_LOW_SPEED_MODE, LCD_LEDC_CH, duty_cycle));
+    // BSP_ERROR_CHECK_RETURN_ERR(ledc_update_duty(LEDC_LOW_SPEED_MODE, LCD_LEDC_CH));
 
     return ESP_OK;
 }
@@ -154,9 +165,6 @@ static lv_disp_t *bsp_display_lcd_init(void)
 
     // user can flush pre-defined pattern to the screen before we turn on the screen or backlight
     BSP_ERROR_CHECK_RETURN_NULL(esp_lcd_panel_disp_on_off(panel_handle, true));
-
-    ESP_LOGI(TAG, "Turn on LCD backlight");
-    gpio_set_level(BSP_LCD_BACKLIGHT, 1);
 
     /* Add LCD screen */
     ESP_LOGD(TAG, "Add LCD screen");

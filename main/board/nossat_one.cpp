@@ -6,8 +6,6 @@
 #include "system/task.h"
 
 #include "hal/led.h"
-#include "hal/knob.h"
-#include "hal/lvgl_knob.h"
 #include "hal/audio_input.h"
 #include "hal/audio_output.h"
 
@@ -38,8 +36,6 @@ auto interrupt_manager = std::make_shared<InterruptManager>(event_loop);
 ResourceManager resource_manager;
 
 auto led = std::make_shared<Led>();
-std::shared_ptr<Knob> left_encoder;
-std::shared_ptr<LvglKnob> right_encoder;
 
 std::shared_ptr<Display> display;
 std::shared_ptr<Gui> gui;
@@ -50,18 +46,6 @@ auto audio_output = std::make_shared<AudioOutput>();
 WiFiHelper
     wifi_helper(DEVICE_NAME, []() { ESP_LOGI(TAG, "WiFI Connected"); }, []() { ESP_LOGI(TAG, "WiFI Disconnected"); });
 std::unique_ptr<MqttManager> mqtt_manager;
-
-void initialize_knobs()
-{
-    left_encoder = std::make_shared<Knob>(GPIO_LEFT_KNOB_S1, GPIO_LEFT_KNOB_S2, GPIO_LEFT_KNOB_KEY);
-    left_encoder->set_step_value(2);
-    left_encoder->set_value_changed_handler([](int value) { ESP_LOGI(TAG, "[left] changed %d", value); });
-    left_encoder->set_click_handler([]() { ESP_LOGI(TAG, "[left] click"); });
-    left_encoder->initialize(event_loop);
-
-    right_encoder = std::make_shared<LvglKnob>(display, GPIO_RIGHT_KNOB_S1, GPIO_RIGHT_KNOB_S2, GPIO_RIGHT_KNOB_KEY);
-    right_encoder->set_page(objects.main);
-}
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
 
@@ -196,15 +180,13 @@ void start()
 
 #if CONFIG_NOSSAT_LVGL_GUI
     display = std::make_shared<Display>();
-    gui = std::make_shared<Gui>(display);
+    gui = std::make_shared<Gui>(display, event_loop);
     gui->show_message("Hello!");
+    display->enable_backlight();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 #else
     ESP_LOGI(TAG, "******* GUI is disabled *******");
 #endif
-
-    ESP_LOGI(TAG, "******* Initialize Controls *******");
-    ESP_LOGI(TAG, "Initialize Encoders");
-    initialize_knobs();
 
     ESP_LOGI(TAG, "******* Initialize Networking *******");
     gui->show_message("Connecting to Wi-Fi...");
@@ -229,7 +211,7 @@ void start()
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
 #if CONFIG_NOSSAT_LVGL_GUI
-    gui->hide_message();
+    gui->show_current_page();
 #endif
     led->clear();
 }

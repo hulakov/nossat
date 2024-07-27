@@ -37,18 +37,14 @@ static knob_handle_t knob_init(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num)
     return iot_knob_create(&cfg);
 }
 
-Knob::Knob(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, gpio_num_t button_gpio_num)
-    : m_s1_gpio_num(s1_gpio_num), m_s2_gpio_num(s2_gpio_num), m_button_gpio_num(button_gpio_num)
+Knob::Knob(std::shared_ptr<EventLoop> event_loop, gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num,
+           gpio_num_t button_gpio_num)
+    : m_event_loop(event_loop)
 {
-}
-
-void Knob::initialize(std::shared_ptr<EventLoop> event_loop)
-{
-    m_event_loop = event_loop;
-
     ESP_LOGI(TAG, "Initialize knob button");
-    m_button = button_init(m_button_gpio_num);
-    m_knob = knob_init(m_s1_gpio_num, m_s2_gpio_num);
+    m_button = button_init(button_gpio_num);
+    ESP_LOGI(TAG, "Initialize knob");
+    m_knob = knob_init(s1_gpio_num, s2_gpio_num);
 
     const auto handler_adapter = [](void *arg, void *data)
     {
@@ -56,13 +52,11 @@ void Knob::initialize(std::shared_ptr<EventLoop> event_loop)
         context->event_loop->post([context] { context->handler(); });
     };
 
-    const auto click_context = new HandlerContext(m_event_loop, std::bind(&Knob::on_click, shared_from_this()));
+    const auto click_context = new HandlerContext(m_event_loop, std::bind(&Knob::on_click, this));
     iot_button_register_cb(m_button, BUTTON_SINGLE_CLICK, handler_adapter, click_context);
-    const auto left_context =
-        new HandlerContext(m_event_loop, std::bind(&Knob::on_value_changed, shared_from_this(), true));
+    const auto left_context = new HandlerContext(m_event_loop, std::bind(&Knob::on_value_changed, this, true));
     iot_knob_register_cb(m_knob, KNOB_LEFT, handler_adapter, left_context);
-    const auto right_context =
-        new HandlerContext(m_event_loop, std::bind(&Knob::on_value_changed, shared_from_this(), false));
+    const auto right_context = new HandlerContext(m_event_loop, std::bind(&Knob::on_value_changed, this, false));
     iot_knob_register_cb(m_knob, KNOB_RIGHT, handler_adapter, right_context);
 }
 

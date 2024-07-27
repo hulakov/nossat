@@ -17,11 +17,11 @@ using Handler = std::function<void()>;
 
 struct new_encoder_pcnt_channel_config_t;
 
-class Knob : public std::enable_shared_from_this<Knob>
+class Knob
 {
 public:
-    Knob(gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num, gpio_num_t button_gpio_num);
-    void initialize(std::shared_ptr<EventLoop> event_loop);
+    Knob(std::shared_ptr<EventLoop> event_loop, gpio_num_t s1_gpio_num, gpio_num_t s2_gpio_num,
+         gpio_num_t button_gpio_num);
 
     int get_value() const;
     void set_value(int value);
@@ -38,9 +38,6 @@ private:
 
 private:
     std::shared_ptr<EventLoop> m_event_loop;
-    const gpio_num_t m_s1_gpio_num;
-    const gpio_num_t m_s2_gpio_num;
-    const gpio_num_t m_button_gpio_num;
 
     ValueChangedHandler m_on_value_changed;
     Handler m_on_click;
