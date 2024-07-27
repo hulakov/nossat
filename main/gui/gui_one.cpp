@@ -15,6 +15,8 @@ Gui::Gui(std::shared_ptr<Display> display, std::shared_ptr<EventLoop> event_loop
 
     ESP_LOGI(TAG, "Initialize controls");
     initialize_knobs(event_loop);
+
+    m_clock_timer = std::make_shared<LvglTimer>(std::bind(&Gui::update_clock, this), 1000);
 }
 
 void Gui::initialize_knobs(std::shared_ptr<EventLoop> event_loop)
@@ -30,6 +32,21 @@ void Gui::initialize_knobs(std::shared_ptr<EventLoop> event_loop)
     m_right_encoder =
         std::make_shared<LvglKnob>(m_display, GPIO_RIGHT_KNOB_S1, GPIO_RIGHT_KNOB_S2, GPIO_RIGHT_KNOB_KEY);
     m_right_encoder->set_page(objects.main);
+}
+
+void Gui::update_clock()
+{
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    auto tm = *std::localtime(&time);
+
+    char buffer[11];
+
+    std::strftime(buffer, sizeof(buffer), "%H:%M:%S", &tm);
+    lv_label_set_text(objects.time_label, buffer);
+
+    std::strftime(buffer, sizeof(buffer), "%d.%m.%Y", &tm);
+    lv_label_set_text(objects.date_label, buffer);
 }
 
 void Gui::show_message(const char *message, bool animation)
@@ -52,8 +69,10 @@ lv_obj_t *Gui::get_page(int page_index)
     switch (page_index)
     {
     case 0:
-        return objects.main;
+        return objects.clock;
     case 1:
+        return objects.main;
+    case 2:
         return objects.settings;
     default:
         assert(!"bad page index");

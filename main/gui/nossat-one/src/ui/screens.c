@@ -93,6 +93,46 @@ void create_screen_main() {
 void tick_screen_main() {
 }
 
+void create_screen_clock() {
+    lv_obj_t *obj = lv_obj_create(0);
+    objects.clock = obj;
+    lv_obj_set_pos(obj, 0, 0);
+    lv_obj_set_size(obj, 160, 128);
+    lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_layout(obj, LV_LAYOUT_FLEX, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_flex_main_place(obj, LV_FLEX_ALIGN_CENTER, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_flex_cross_place(obj, LV_FLEX_ALIGN_CENTER, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_flex_track_place(obj, LV_FLEX_ALIGN_CENTER, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_flex_flow(obj, LV_FLEX_FLOW_ROW, LV_PART_SCROLLBAR | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0xff000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    {
+        lv_obj_t *parent_obj = obj;
+        {
+            // timeLabel
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.time_label = obj;
+            lv_obj_set_pos(obj, 0, 33);
+            lv_obj_set_size(obj, LV_PCT(100), LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "23:00:44");
+            lv_obj_set_style_text_font(obj, &ui_font_roboto_mono_medium_30, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+        {
+            // dateLabel
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.date_label = obj;
+            lv_obj_set_pos(obj, 0, 70);
+            lv_obj_set_size(obj, LV_PCT(100), LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "27.07.2023");
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+    }
+}
+
+void tick_screen_clock() {
+}
+
 void create_screen_settings() {
     lv_obj_t *obj = lv_obj_create(0);
     objects.settings = obj;
@@ -217,6 +257,7 @@ void create_screens() {
     lv_disp_set_theme(dispp, theme);
     
     create_screen_main();
+    create_screen_clock();
     create_screen_settings();
     create_screen_message_box();
 }
@@ -225,6 +266,7 @@ typedef void (*tick_screen_func_t)();
 
 tick_screen_func_t tick_screen_funcs[] = {
     tick_screen_main,
+    tick_screen_clock,
     tick_screen_settings,
     tick_screen_message_box,
 };

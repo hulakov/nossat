@@ -27,6 +27,7 @@
 
 #include "bsp/esp-bsp.h"
 #include "secrets.h"
+#include "esp_sntp.h"
 
 static const char *DEVICE_NAME = "nossat_one";
 static const char *TAG = "board";
@@ -170,6 +171,22 @@ void initialize_speech_recognition()
 }
 #endif
 
+void initialize_sntp()
+{
+    ESP_LOGI(TAG, "Initializing SNTP");
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setservername(0, "pool.ntp.org");
+    esp_sntp_init();
+
+    int retry = 0;
+    const int retry_count = 10;
+    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count)
+    {
+        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+}
+
 void start()
 {
     ESP_LOGI(TAG, "******* Initialize Interrupts and Events *******");
@@ -192,6 +209,14 @@ void start()
     gui->show_message("Connecting to Wi-Fi...");
     ESP_LOGI(TAG, "Connect to Wi-Fi");
     ESP_TRUE_CHECK(wifi_helper.connectToAp(WIFI_SSID, WIFI_PASSWORD, true, 5 * 60 * 1000));
+
+    // // FIXME add support of different time zones
+    setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
+    tzset();
+
+    ESP_LOGI(TAG, "Initializing SNTP");
+    gui->show_message("Initializing SNTP...");
+    initialize_sntp();
 
     ESP_LOGI(TAG, "Connect to MQTT");
     gui->show_message("Connecting to MQTT...");

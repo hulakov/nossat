@@ -51,11 +51,13 @@ elseif (CONFIG_NOSSAT_ONE_BOARD)
 
     list(APPEND LVGL_SOURCES
         gui/gui_one.cpp
+        gui/lvgl_timer.cpp
 
         gui/nossat-one/src/ui/images.c
         gui/nossat-one/src/ui/screens.c
         gui/nossat-one/src/ui/styles.c
         gui/nossat-one/src/ui/ui.c
+        gui/nossat-one/src/ui/ui_font_roboto_mono_medium_30.c
     )
 endif()
 
