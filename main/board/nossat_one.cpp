@@ -24,6 +24,7 @@
 #endif
 
 #include <thread>
+#include <mutex>
 
 #include "bsp/esp-bsp.h"
 #include "secrets.h"
@@ -47,6 +48,54 @@ auto audio_output = std::make_shared<AudioOutput>();
 WiFiHelper
     wifi_helper(DEVICE_NAME, []() { ESP_LOGI(TAG, "WiFI Connected"); }, []() { ESP_LOGI(TAG, "WiFI Disconnected"); });
 std::unique_ptr<MqttManager> mqtt_manager;
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+std::atomic<bool> recording = false;
+AudioData recorded_audio;
+std::mutex recorded_audio_mutex;
+
+void action_on_start_recording(lv_event_t *e)
+{
+    ESP_LOGI(TAG, "Start recording");
+    if (!recording)
+    {
+        {
+            std::unique_lock<std::mutex> lock(recorded_audio_mutex);
+            recorded_audio = {};
+        }
+        gui->show_recording_screen();
+        recording = true;
+    }
+}
+
+void action_on_stop_recording(lv_event_t *e)
+{
+    ESP_LOGI(TAG, "Stop recording");
+    if (recording)
+    {
+        // drop ending to avoid click
+        const uint32_t samples_per_250ms =
+            std::min(static_cast<size_t>(recorded_audio.get_sample_rate() / 4), recorded_audio.get_num_samples());
+        recorded_audio.resize(recorded_audio.get_num_samples() - samples_per_250ms);
+
+        {
+            ESP_LOGI(TAG, "Start playing");
+            std::unique_lock<std::mutex> lock(recorded_audio_mutex);
+            audio_output->play(recorded_audio);
+            ESP_LOGI(TAG, "End playing");
+        }
+        gui->show_current_page();
+        recording = false;
+    }
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 #if CONFIG_NOSSAT_SPEECH_RECOGNITION
 
@@ -135,31 +184,12 @@ void add_commands()
     speech_recognition->end_add_commands();
 }
 
-void audio_feed_task()
-{
-    const size_t audio_chunksize = speech_recognition->get_feed_chunksize();
-    const AudioFormat audio_format = audio_input->get_audio_format();
-
-    ESP_LOGI(TAG, "Run audio feed task: num_channels %lu, bits_per_sample %lu, sample_rate %lu",
-             audio_format.num_channels, audio_format.bits_per_sample, audio_format.sample_rate);
-
-    AudioData audio;
-    while (true)
-    {
-        audio.set_format(audio_format, audio_chunksize);
-        audio_input->capture_audio(audio);
-        audio.add_channels(SpeechRecognition::REFERENCE_CHANNEL_COUNT);
-        speech_recognition->feed(audio);
-    }
-}
-
 void initialize_speech_recognition()
 {
     speech_recognition =
         std::make_shared<SpeechRecognition>(event_loop, std::make_unique<SpeechRecognitionObserver>(), audio_input);
 
     ESP_LOGI(TAG, "******* Start tasks *******");
-    create_task(audio_feed_task, "Feed Task", 4 * 1024, 5, 1);
     auto detect_task = []()
     {
         ESP_LOGI(TAG, "******* Add Speech Recognition Commands *******");
@@ -170,6 +200,54 @@ void initialize_speech_recognition()
     create_task(detect_task, "Detect Task", 8 * 1024, 5, 0);
 }
 #endif
+
+void audio_feed_task()
+{
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
+    const size_t audio_chunksize = speech_recognition->get_feed_chunksize();
+#else
+    // 16000
+    const size_t audio_chunksize = 1024;
+#endif
+
+    const AudioFormat audio_format = audio_input->get_audio_format();
+    ESP_LOGI(TAG, "Run audio feed task: num_channels %lu, bits_per_sample %lu, sample_rate %lu",
+             audio_format.num_channels, audio_format.bits_per_sample, audio_format.sample_rate);
+
+    // num samples per 100 ms
+    const size_t vis_step = audio_format.sample_rate * 0.05;
+    size_t vis_pos = 0;
+
+    AudioData audio;
+
+    while (true)
+    {
+        audio.set_format(audio_format, audio_chunksize);
+        audio_input->capture_audio(audio);
+
+        if (recording)
+        {
+            std::vector<int32_t> values;
+            while (vis_pos < audio.get_num_samples())
+            {
+                values.push_back(audio.get_value(vis_pos, 0));
+                vis_pos += vis_step;
+            }
+            vis_pos %= audio.get_num_samples();
+            gui->add_recording_data(values);
+
+            std::unique_lock<std::mutex> lock(recorded_audio_mutex);
+            if (recorded_audio.is_empty())
+                recorded_audio = audio;
+            else
+                recorded_audio.join(audio);
+        }
+#if CONFIG_NOSSAT_SPEECH_RECOGNITION
+        audio.add_channels(SpeechRecognition::REFERENCE_CHANNEL_COUNT);
+        speech_recognition->feed(audio);
+#endif
+    }
+}
 
 void initialize_sntp()
 {
@@ -229,6 +307,9 @@ void start()
 #else
     ESP_LOGI(TAG, "******* Speech Recognition is disabled *******");
 #endif
+
+    ESP_LOGI(TAG, "******* Start audio capturing *******");
+    create_task(audio_feed_task, "Feed Task", 4 * 1024, 5, 1);
 
     ESP_LOGI(TAG, "******* Ready! *******");
 

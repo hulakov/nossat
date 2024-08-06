@@ -35,6 +35,9 @@ public:
     bool is_empty() const { return m_format == AudioFormat(); }
     void join(const AudioData &data);
 
+    int32_t get_value(uint32_t sample, uint32_t channel) const;
+    void set_value(uint32_t sample, uint32_t channel, int32_t value);
+
     const AudioFormat &get_format() const { return m_format; }
     uint32_t get_num_channels() const { return m_format.num_channels; }
     uint32_t get_bits_per_sample() const { return m_format.bits_per_sample; }

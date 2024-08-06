@@ -135,3 +135,46 @@ void AudioData::join(const AudioData &audio)
     assert(m_format == audio.m_format);
     m_data.insert(m_data.end(), audio.m_data.begin(), audio.m_data.end());
 }
+
+int32_t AudioData::get_value(uint32_t sample, uint32_t channel) const
+{
+    const uint32_t bytes_per_sample = (m_format.bits_per_sample / 8);
+    uint32_t offset = sample * bytes_per_sample * m_format.num_channels + bytes_per_sample * channel;
+
+    const int8_t *ptr = m_data.data() + offset;
+    switch (m_format.bits_per_sample)
+    {
+    case 8:
+        return static_cast<int32_t>(*ptr);
+    case 16:
+        return static_cast<int32_t>(*reinterpret_cast<const int16_t *>(ptr));
+    case 32:
+        return *reinterpret_cast<const int32_t *>(ptr);
+    default:
+        assert(!"Audio format is not supported");
+        break;
+    };
+}
+
+void AudioData::set_value(uint32_t sample, uint32_t channel, int32_t value)
+{
+    const uint32_t bytes_per_sample = (m_format.bits_per_sample / 8);
+    uint32_t offset = sample * bytes_per_sample * m_format.num_channels + bytes_per_sample * channel;
+
+    int8_t *ptr = m_data.data() + offset;
+    switch (m_format.bits_per_sample)
+    {
+    case 8:
+        *ptr = static_cast<int8_t>(value);
+        break;
+    case 16:
+        *reinterpret_cast<int16_t *>(ptr) = static_cast<int16_t>(value);
+        break;
+    case 32:
+        *reinterpret_cast<int32_t *>(ptr) = value;
+        break;
+    default:
+        assert(!"Audio format is not supported");
+        break;
+    };
+}

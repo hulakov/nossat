@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+extern void action_on_start_recording(lv_event_t * e);
+extern void action_on_stop_recording(lv_event_t * e);
 
 
 #ifdef __cplusplus
